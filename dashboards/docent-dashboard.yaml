@@ -1,0 +1,221 @@
+# Docent-dashboard voor het virtuele EMS.
+#
+# Plak dit in een nieuw dashboard via Bewerken -> Ruwe configuratie-editor.
+# Maak dit dashboard alleen zichtbaar voor beheerders: Instellingen ->
+# Dashboards -> dit dashboard -> "Alleen beheerder" aanzetten.
+#
+# Hier staat bewust geen kiosk_mode-blok in: de docent hoort de gewone
+# Home Assistant-omgeving te houden.
+
+title: EMS docent
+views:
+  # --- Lessituatie klaarzetten ---------------------------------------------
+  - title: Scenario's
+    path: scenarios
+    icon: mdi:teach
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Zet een lessituatie klaar
+            heading_style: title
+            icon: mdi:play-box-multiple
+
+          - type: markdown
+            content: >-
+              Eén druk zet bewolking, batterijstand, laadpaal, apparaten én het
+              tijdstip van de gesimuleerde dag in één keer goed voor de hele
+              klas. De kWh-tellers blijven staan; gebruik daarvoor Terugzetten.
+
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Zonnige dag
+                icon: mdi:weather-sunny
+                show_state: false
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.set_scenario
+                  data:
+                    scenario: zonnige_dag
+              - type: button
+                name: Bewolkte dag
+                icon: mdi:weather-cloudy
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.set_scenario
+                  data:
+                    scenario: bewolkte_dag
+
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Piek in de avond
+                icon: mdi:home-lightning-bolt
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.set_scenario
+                  data:
+                    scenario: piekbelasting_avond
+              - type: button
+                name: Lege batterij
+                icon: mdi:battery-alert
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.set_scenario
+                  data:
+                    scenario: lege_batterij
+
+          - type: button
+            name: Alles terugzetten
+            icon: mdi:restart
+            tap_action:
+              action: perform-action
+              perform_action: virtual_ems.reset
+              data:
+                alleen_tellers: false
+
+          - type: button
+            name: Alleen de tellers terugzetten
+            icon: mdi:counter
+            tap_action:
+              action: perform-action
+              perform_action: virtual_ems.reset
+              data:
+                alleen_tellers: true
+
+      # --- Rechtstreekse bediening -----------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Rechtstreeks bedienen
+            heading_style: title
+            icon: mdi:tune
+
+          - type: entities
+            title: Instelbare waarden
+            entities:
+              - entity: number.virtueel_ems_pv_bewolking
+                name: Bewolking
+              - entity: number.virtueel_ems_batterij_vermogen
+                name: Batterij doelvermogen
+              - entity: number.virtueel_ems_batterij_min_soc
+                name: Batterij ondergrens
+              - entity: number.virtueel_ems_batterij_max_soc
+                name: Batterij bovengrens
+              - entity: number.virtueel_ems_laadpaal_vermogen
+                name: Laadvermogen laadpaal
+              - entity: number.virtueel_ems_tijdversnelling
+                name: Tijdversnelling
+
+          - type: entities
+            title: Schakelaars
+            entities:
+              - entity: switch.virtueel_ems_laadpaal_actief
+                name: Laadpaal actief
+              - entity: switch.virtueel_ems_wasmachine
+                name: Wasmachine (2000 W)
+              - entity: switch.virtueel_ems_boiler
+                name: Boiler (2500 W)
+              - entity: switch.virtueel_ems_airco
+                name: Airco (1200 W)
+
+      # --- Diagnose ---------------------------------------------------------
+      - type: grid
+        cards:
+          - type: heading
+            heading: Onder de motorkap
+            heading_style: title
+            icon: mdi:magnify
+
+          - type: entities
+            title: Simulatie
+            entities:
+              - entity: sensor.virtueel_ems_simulatietijd
+                name: Gesimuleerd tijdstip
+              - entity: sensor.virtueel_ems_zonnehoogte
+                name: Zonnehoogte
+              - entity: sensor.virtueel_ems_batterij_inhoud
+                name: Inhoud batterij
+
+          - type: markdown
+            content: >-
+              Staat de tijdversnelling op 10, dan gaat er in één lesuur ongeveer
+              tien uur gesimuleerde tijd voorbij. De zonnestand volgt het
+              gesimuleerde tijdstip hierboven, niet de klok aan de muur.
+
+  # --- Op de beamer ---------------------------------------------------------
+  - title: Op de beamer
+    path: beamer
+    icon: mdi:projector
+    type: sections
+    max_columns: 2
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Alle vermogens tegelijk
+            heading_style: title
+            icon: mdi:chart-line
+
+          - type: history-graph
+            hours_to_show: 1
+            entities:
+              - entity: sensor.virtueel_ems_pv_vermogen
+                name: Zon
+              - entity: sensor.virtueel_ems_huishoudelijk_verbruik
+                name: Huis
+              - entity: sensor.virtueel_ems_laadpaal_vermogen
+                name: Auto
+              - entity: sensor.virtueel_ems_batterij_vermogen_actueel
+                name: Batterij
+              - entity: sensor.virtueel_ems_net_vermogen
+                name: Net
+
+          - type: history-graph
+            hours_to_show: 1
+            entities:
+              - entity: sensor.virtueel_ems_batterij_soc
+                name: Laadtoestand batterij
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Alle tellers tegelijk
+            heading_style: title
+            icon: mdi:counter
+
+          - type: entities
+            title: Cumulatief (kWh)
+            entities:
+              - entity: sensor.virtueel_ems_pv_opbrengst
+                name: PV opbrengst
+              - entity: sensor.virtueel_ems_batterij_geladen
+                name: Batterij geladen
+              - entity: sensor.virtueel_ems_batterij_ontladen
+                name: Batterij ontladen
+              - entity: sensor.virtueel_ems_laadpaal_verbruik
+                name: Laadpaal
+              - entity: sensor.virtueel_ems_verbruik_totaal
+                name: Huishoudelijk verbruik
+              - entity: sensor.virtueel_ems_net_afname
+                name: Netafname
+              - entity: sensor.virtueel_ems_net_teruglevering
+                name: Teruglevering
+              - entity: sensor.virtueel_ems_wasmachine_verbruik
+                name: Wasmachine
+              - entity: sensor.virtueel_ems_boiler_verbruik
+                name: Boiler
+              - entity: sensor.virtueel_ems_airco_verbruik
+                name: Airco
+
+          - type: markdown
+            content: >-
+              De kaart hieronder werkt pas nadat het Energiedashboard is
+              ingericht (Instellingen -> Dashboards -> Energie). Het stappenplan
+              staat in de README.
+
+          - type: energy-distribution
+            link_dashboard: true

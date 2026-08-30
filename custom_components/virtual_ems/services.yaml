@@ -1,0 +1,36 @@
+set_scenario:
+  name: Scenario instellen
+  description: >-
+    Zet in één handeling een complete lessituatie klaar: bewolking, batterijstand,
+    laadpaal, apparaten en het tijdstip van de gesimuleerde dag.
+  fields:
+    scenario:
+      name: Scenario
+      description: De lessituatie die je wilt klaarzetten.
+      required: true
+      example: zonnige_dag
+      selector:
+        select:
+          translation_key: scenario
+          options:
+            - zonnige_dag
+            - bewolkte_dag
+            - piekbelasting_avond
+            - lege_batterij
+
+reset:
+  name: Terugzetten
+  description: >-
+    Zet alle cumulatieve kWh-tellers op nul en de batterij terug op 50 procent,
+    zodat een nieuwe lesgroep met een schone lei begint.
+  fields:
+    alleen_tellers:
+      name: Alleen de tellers
+      description: >-
+        Aan: alleen de kWh-tellers en de batterijstand gaan terug, de standen van
+        de schuiven en schakelaars blijven staan. Uit: ook de bediening gaat terug
+        naar de beginstand.
+      required: false
+      default: false
+      selector:
+        boolean:
