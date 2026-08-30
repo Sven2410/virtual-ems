@@ -157,6 +157,23 @@
             ampere_per_fase: 25,
           }),
           sensor("zelfbenutting", 91.8, "%"),
+          sensor("hoogste_piek", 4820, "W"),
+          [
+            "sensor." + SLUG + "_regelactie",
+            {
+              entity_id: "sensor." + SLUG + "_regelactie",
+              state: "De batterij laadt met 2,00 kW met het overschot van de zon.",
+              attributes: {
+                friendly_name: "Lokaal A regelactie",
+                alle_redenen: ["De batterij laadt met 2,00 kW met het overschot van de zon."],
+                ingegrepen: true,
+                knelpunt: false,
+              },
+            },
+          ],
+          sensor("laadpaal_limiet", 3700, "W"),
+          sensor("batterij_opdracht", 2000, "W"),
+          sensor("zekering_warmte", 0, "%", { gesprongen: false, smelt_over_s: null }),
           sensor("zonnehoogte", 58.3, "°"),
           [
             "sensor." + SLUG + "_simulatietijd",
@@ -180,8 +197,35 @@
           nummer("batterij_min_soc", 10, 0, 100, 5, "%"),
           nummer("batterij_max_soc", 100, 0, 100, 5, "%"),
           nummer("laadpaal_vermogen", 3700, 0, 11000, 100, "W"),
+          nummer("piekgrens", 3000, 0, 17250, 250, "W"),
           nummer("tijdversnelling", 10, 1, 60, 1, ""),
           schakelaar("laadpaal_actief", false, 0),
+          schakelaar("aansluitbewaking", true, 0),
+          [
+            "select." + SLUG + "_regelmodus",
+            {
+              entity_id: "select." + SLUG + "_regelmodus",
+              state: "zelfconsumptie",
+              attributes: {
+                friendly_name: "Lokaal A regelmodus",
+                options: ["handmatig", "zelfconsumptie", "piekscheren"],
+              },
+            },
+          ],
+          [
+            "binary_sensor." + SLUG + "_hoofdzekering",
+            {
+              entity_id: "binary_sensor." + SLUG + "_hoofdzekering",
+              state: "off",
+              attributes: {
+                friendly_name: "Lokaal A hoofdzekering",
+                device_class: "problem",
+                warmte_pct: 0,
+                nominaal_w: 17250,
+                smelt_over_s: null,
+              },
+            },
+          ],
           schakelaar("wasmachine", false, 2000),
           schakelaar("boiler", true, 2500),
           schakelaar("airco", false, 1200),
@@ -203,6 +247,19 @@
           if (domein === "number" && dienst === "set_value") {
             const s = this.states[gegevens.entity_id];
             if (s) s.state = String(gegevens.value);
+          }
+          if (domein === "select" && dienst === "select_option") {
+            const s = this.states[gegevens.entity_id];
+            if (s) s.state = gegevens.option;
+          }
+          if (domein === "virtual_ems" && dienst === "zekering_herstellen") {
+            const z = this.states["binary_sensor." + SLUG + "_hoofdzekering"];
+            if (z) {
+              z.state = "off";
+              z.attributes = Object.assign({}, z.attributes, { warmte_pct: 0, smelt_over_s: null });
+            }
+            const w = this.states["sensor." + SLUG + "_zekering_warmte"];
+            if (w) w.state = "0";
           }
           teken();
           return Promise.resolve();

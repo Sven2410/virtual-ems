@@ -178,6 +178,8 @@ def frontend_entiteiten() -> dict[str, list[str]]:
         "sensor": _lijst_uit_js(bron, "SENSOREN"),
         "number": _lijst_uit_js(bron, "NUMMERS"),
         "switch": _lijst_uit_js(bron, "SCHAKELAARS"),
+        "select": _lijst_uit_js(bron, "KEUZES"),
+        "binary_sensor": _lijst_uit_js(bron, "BINAIRE"),
     }
 
 

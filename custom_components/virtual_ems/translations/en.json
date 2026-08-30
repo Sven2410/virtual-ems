@@ -113,6 +113,21 @@
       },
       "airco_verbruik": {
         "name": "Air conditioner energy"
+      },
+      "hoogste_piek": {
+        "name": "Highest peak"
+      },
+      "regelactie": {
+        "name": "Control action"
+      },
+      "laadpaal_limiet": {
+        "name": "Charger limit"
+      },
+      "batterij_opdracht": {
+        "name": "Battery command"
+      },
+      "zekering_warmte": {
+        "name": "Fuse heat"
       }
     },
     "number": {
@@ -133,6 +148,9 @@
       },
       "tijdversnelling": {
         "name": "Time acceleration"
+      },
+      "piekgrens": {
+        "name": "Peak limit"
       }
     },
     "switch": {
@@ -147,6 +165,24 @@
       },
       "airco": {
         "name": "Air conditioner"
+      },
+      "aansluitbewaking": {
+        "name": "Connection guard"
+      }
+    },
+    "select": {
+      "regelmodus": {
+        "name": "Control mode",
+        "state": {
+          "handmatig": "Manual, you are in control",
+          "zelfconsumptie": "Self consumption",
+          "piekscheren": "Peak shaving"
+        }
+      }
+    },
+    "binary_sensor": {
+      "hoofdzekering": {
+        "name": "Main fuse"
       }
     }
   },
@@ -156,6 +192,7 @@
         "zonnige_dag": "Sunny day around noon",
         "bewolkte_dag": "Heavily clouded day",
         "piekbelasting_avond": "Evening peak load",
+        "piek_met_regelaar": "Evening peak with the controller on",
         "lege_batterij": "Empty battery in the morning"
       }
     },
@@ -186,6 +223,11 @@
           "description": "On: only the counters and the battery level are reset. Off: the controls return to their starting position as well."
         }
       }
+    },
+    "zekering_herstellen": {
+      "name": "Replace fuse",
+      "description": "Puts a new main fuse in the simulated installation so the power comes back.",
+      "fields": {}
     }
   }
 }

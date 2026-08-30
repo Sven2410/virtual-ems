@@ -82,8 +82,7 @@ MUTATIES: tuple[Mutatie, ...] = (
         zoek="            power = min(request, max(0.0, allowed_w))",
         vervang="            power = request",
         proeven=(
-            "tests/kern/test_simulation.py::test_soc_blijft_altijd_tussen_nul_en_honderd",
-            "tests/kern/test_simulation.py::test_batterij_laadt_niet_boven_de_ingestelde_bovengrens",
+            "tests/kern/test_simulation.py::test_de_natuurkunde_beschermt_de_batterij_ook_los_van_de_regelaar",
         ),
     ),
     Mutatie(
@@ -92,7 +91,7 @@ MUTATIES: tuple[Mutatie, ...] = (
         zoek="            power = -min(-request, max(0.0, allowed_w))",
         vervang="            power = request",
         proeven=(
-            "tests/kern/test_simulation.py::test_batterij_ontlaadt_niet_onder_de_ingestelde_ondergrens",
+            "tests/kern/test_simulation.py::test_de_natuurkunde_ontlaadt_nooit_onder_de_ondergrens",
         ),
     ),
     Mutatie(
@@ -138,6 +137,68 @@ MUTATIES: tuple[Mutatie, ...] = (
         proeven=(
             "tests/kern/test_simulation.py::test_bewolking_verlaagt_de_opbrengst_evenredig",
             "tests/kern/test_scenarios.py::test_bewolkte_dag_levert_veel_minder_dan_een_zonnige_dag",
+        ),
+    ),
+    Mutatie(
+        naam="het vangnet doet niets meer",
+        bestand=COMPONENT / "regelaar.py",
+        zoek="    if bewaking and situatie.connection_w > 0:",
+        vervang="    if False and situatie.connection_w > 0:",
+        proeven=(
+            "tests/kern/test_regelaar.py::test_de_bewaking_regelt_daarna_de_laadpaal_terug",
+            "tests/kern/test_simulation.py::test_de_regelaar_houdt_de_installatie_binnen_de_aansluiting",
+        ),
+        toelichting="Precies de klacht: je zet alles aan en er wordt niets teruggeregeld.",
+    ),
+    Mutatie(
+        naam="zelfconsumptie met het teken de verkeerde kant op",
+        bestand=COMPONENT / "regelaar.py",
+        # De eerste treffer is die van zelfconsumptie; piekscheren staat dieper
+        # ingesprongen en komt later in het bestand.
+        zoek="        besluit.battery_w = _begrens_batterij(-saldo, situatie)\n",
+        vervang="        besluit.battery_w = _begrens_batterij(saldo, situatie)\n",
+        proeven=(
+            "tests/kern/test_regelaar.py::test_zelfconsumptie_slaat_het_overschot_van_de_zon_op",
+            "tests/kern/test_simulation.py::test_zelfconsumptie_houdt_het_net_vrijwel_op_nul",
+        ),
+    ),
+    Mutatie(
+        naam="de laadpaal wordt teruggeregeld voordat het laden stopt",
+        bestand=COMPONENT / "regelaar.py",
+        zoek="    if saldo > grens and besluit.ev_w > DREMPEL_W:",
+        vervang="    if besluit.ev_w > DREMPEL_W:",
+        proeven=(
+            "tests/kern/test_regelaar.py::test_de_bewaking_stopt_eerst_het_laden_van_de_batterij",
+        ),
+        toelichting="De volgorde is de les: eerst wat niemand mist.",
+    ),
+    Mutatie(
+        naam="de redenen van het vangnet staan omgekeerd",
+        bestand=COMPONENT / "regelaar.py",
+        zoek="    besluit.redenen = vangnet + besluit.redenen\n    return besluit",
+        vervang="    besluit.redenen = list(reversed(vangnet)) + besluit.redenen\n    return besluit",
+        proeven=(
+            "tests/kern/test_regelaar.py::test_de_grootste_ingreep_staat_bovenaan_en_niet_de_laatste",
+        ),
+        toelichting="Dan leest de kop een ingreep van twintig watt voor terwijl er 5 kW af ging.",
+    ),
+    Mutatie(
+        naam="de hoofdzekering smelt nooit door",
+        bestand=COMPONENT / "zekering.py",
+        zoek="        if self.warmte >= 1.0:",
+        vervang="        if self.warmte >= 1000.0:",
+        proeven=(
+            "tests/kern/test_zekering.py::test_de_conventionele_smeltstroom_smelt_wel_binnen_de_conventionele_tijd",
+            "tests/kern/test_simulation.py::test_te_lang_te_veel_laat_de_hoofdzekering_springen",
+        ),
+    ),
+    Mutatie(
+        naam="een gesprongen zekering laat de installatie gewoon doordraaien",
+        bestand=COMPONENT / "simulation.py",
+        zoek="        if self.zekering.gesprongen:",
+        vervang="        if False:",
+        proeven=(
+            "tests/kern/test_simulation.py::test_een_gesprongen_zekering_zet_alles_stil",
         ),
     ),
     Mutatie(

@@ -44,6 +44,7 @@ from .const import (
     STORAGE_VERSION,
     UPDATE_INTERVAL_SECONDS,
 )
+from .regelaar import MODUSSEN
 from .scenarios import SCENARIOS, apply_scenario
 from .simulation import PlantConfig, Simulation, Snapshot
 
@@ -208,6 +209,26 @@ class VirtualEmsCoordinator(DataUpdateCoordinator[Snapshot]):
 
     async def async_set_time_factor(self, value: float) -> None:
         self.simulation.setpoints.time_factor = max(1.0, value)
+        await self.async_apply_and_refresh()
+
+    async def async_set_modus(self, modus: str) -> None:
+        if modus in MODUSSEN:
+            self.simulation.setpoints.modus = modus
+        await self.async_apply_and_refresh()
+
+    async def async_set_bewaking(self, aan: bool) -> None:
+        self.simulation.setpoints.bewaking = aan
+        await self.async_apply_and_refresh()
+
+    async def async_set_peak_limit(self, value: float) -> None:
+        grens = self.simulation.config.connection_power_w
+        self.simulation.setpoints.peak_limit_w = max(0.0, min(grens, value))
+        await self.async_apply_and_refresh()
+
+    async def async_herstel_zekering(self) -> None:
+        """Een nieuwe zekering erin. Werk voor de docent."""
+        self.simulation.zekering.herstel()
+        await self.async_save()
         await self.async_apply_and_refresh()
 
     async def async_set_appliance(self, key: str, enabled: bool) -> None:

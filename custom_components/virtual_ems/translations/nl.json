@@ -113,6 +113,21 @@
       },
       "airco_verbruik": {
         "name": "Airco verbruik"
+      },
+      "hoogste_piek": {
+        "name": "Hoogste piek"
+      },
+      "regelactie": {
+        "name": "Regelactie"
+      },
+      "laadpaal_limiet": {
+        "name": "Laadpaal limiet"
+      },
+      "batterij_opdracht": {
+        "name": "Batterij opdracht"
+      },
+      "zekering_warmte": {
+        "name": "Zekering warmte"
       }
     },
     "number": {
@@ -133,6 +148,9 @@
       },
       "tijdversnelling": {
         "name": "Tijdversnelling"
+      },
+      "piekgrens": {
+        "name": "Piekgrens"
       }
     },
     "switch": {
@@ -147,6 +165,24 @@
       },
       "airco": {
         "name": "Airco"
+      },
+      "aansluitbewaking": {
+        "name": "Aansluitbewaking"
+      }
+    },
+    "select": {
+      "regelmodus": {
+        "name": "Regelmodus",
+        "state": {
+          "handmatig": "Handmatig, jij stuurt",
+          "zelfconsumptie": "Zelfconsumptie, zo min mogelijk over de meter",
+          "piekscheren": "Piekscheren, afname onder een grens"
+        }
+      }
+    },
+    "binary_sensor": {
+      "hoofdzekering": {
+        "name": "Hoofdzekering"
       }
     }
   },
@@ -156,6 +192,7 @@
         "zonnige_dag": "Zonnige dag rond het middaguur",
         "bewolkte_dag": "Zwaar bewolkte dag",
         "piekbelasting_avond": "Piekbelasting in de avond",
+        "piek_met_regelaar": "Piekbelasting met de regelaar aan",
         "lege_batterij": "Lege batterij in de ochtend"
       }
     },
@@ -186,6 +223,11 @@
           "description": "Aan: alleen de kWh-tellers en de batterijstand gaan terug. Uit: ook de schuiven en schakelaars gaan terug naar de beginstand."
         }
       }
+    },
+    "zekering_herstellen": {
+      "name": "Zekering vervangen",
+      "description": "Zet een nieuwe hoofdzekering in de gesimuleerde installatie, zodat er weer spanning op staat.",
+      "fields": {}
     }
   }
 }

@@ -3,7 +3,7 @@
 import { Kaart, balkBreedte, stijl, tekst } from "./basis.js";
 import { icoon } from "./iconen.js";
 import { bekend, energie, getal, kaartCss, procent, vermogen } from "./stijl.js";
-import { ids, installatieNaam } from "./entiteiten.js";
+import { MODUSSEN, ids, installatieNaam } from "./entiteiten.js";
 
 const DREMPEL_W = 50; // Onder dit vermogen noemen we het net in balans.
 
@@ -91,6 +91,63 @@ const KOP_CSS =
   .voet .ico { color: var(--dt-solar); flex: 0 0 auto; margin-top: 1px; }
   .voet svg { width: 15px; height: 15px; display: block; }
 
+  .regelblok {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 13px 15px;
+    border-radius: var(--dt-radius-sm);
+    background: var(--dt-accent-soft);
+    border: 1px solid rgba(25, 143, 217, 0.22);
+  }
+
+  .regelblok .chip {
+    width: 30px;
+    height: 30px;
+    background: rgba(25, 143, 217, 0.18);
+    color: var(--dt-accent-hi);
+  }
+
+  .regelblok .chip svg { width: 16px; height: 16px; }
+  .regelblok .wat { min-width: 0; }
+
+  .regelblok .stand {
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--dt-accent-hi);
+    margin-bottom: 3px;
+  }
+
+  .regelblok .reden { font-size: 13.5px; line-height: 1.5; color: var(--dt-ink); }
+  .regelblok .meer { font-size: 12.5px; line-height: 1.5; color: var(--dt-ink-2); margin-top: 4px; }
+
+  .regelblok[data-soort="knelpunt"] {
+    background: rgba(208, 59, 59, 0.14);
+    border-color: rgba(208, 59, 59, 0.3);
+  }
+
+  .regelblok[data-soort="knelpunt"] .chip {
+    background: rgba(208, 59, 59, 0.18);
+    color: var(--dt-bad);
+  }
+
+  .regelblok[data-soort="knelpunt"] .stand { color: var(--dt-bad); }
+
+  .regelblok[data-soort="rust"] {
+    background: var(--dt-surface);
+    border-color: var(--dt-border);
+  }
+
+  .regelblok[data-soort="rust"] .chip {
+    background: var(--dt-surface-hi);
+    color: var(--dt-ink-3);
+  }
+
+  .regelblok[data-soort="rust"] .stand { color: var(--dt-ink-3); }
+
   @media (max-width: 520px) {
     .kaart { padding: 18px 16px; }
     .kop { font-size: 21px; }
@@ -128,6 +185,10 @@ export class KopKaart extends Kaart {
       "</div>" +
       "<h1 class='kop' id='kop'></h1>" +
       "<p class='uitleg' id='uitleg'></p>" +
+      "<div class='regelblok' id='regelblok'><div class='chip' id='regelico'></div>" +
+      "<div class='wat'><div class='stand' id='regelstand'></div>" +
+      "<div class='reden' id='regelreden'></div>" +
+      "<div class='meer' id='regelmeer'></div></div></div>" +
       "<hr class='hairline'>" +
       "<div class='voet'><span class='ico'>" +
       icoon("zon", 15) +
@@ -174,6 +235,31 @@ export class KopKaart extends Kaart {
       pilIco.innerHTML = icoon("balans", 13);
     }
 
+    // De zekering gaat voor alles: staat die eruit, dan is de rest niet meer
+    // waar en hoort het scherm dat te zeggen in plaats van nullen te tonen.
+    const zekeringWeg = this.toestand(this._ids.binary_sensor_hoofdzekering);
+    if (zekeringWeg && zekeringWeg.state === "on") {
+      stijl(pil, "background", "rgba(208, 59, 59, 0.18)");
+      stijl(pil, "color", "var(--dt-bad)");
+      tekst(this.zoek("#piltekst"), "Hoofdzekering gesprongen");
+      pilIco.innerHTML = icoon("zekering", 13);
+      tekst(this.zoek("#kop"), "Er staat geen spanning op de installatie");
+      tekst(
+        this.zoek("#uitleg"),
+        "De hoofdzekering is doorgesmolten omdat er te lang te veel gevraagd werd. " +
+          "Alles ligt eruit: de panelen, de batterij, de laadpaal en het huis."
+      );
+      this._toonRegel(
+        "knelpunt",
+        "zekering",
+        "Uit",
+        "De docent moet een nieuwe zekering plaatsen.",
+        "Dat gaat met de service virtual_ems.zekering_herstellen of met de knop op het docentscherm."
+      );
+      tekst(this.zoek("#voet"), "Zolang de zekering eruit ligt loopt er geen enkele teller.");
+      return;
+    }
+
     let kop = "Nog geen meting binnen";
     if (net !== null) {
       const v = vermogen(Math.abs(net));
@@ -215,10 +301,49 @@ export class KopKaart extends Kaart {
       }
     }
     tekst(this.zoek("#voet"), voet);
+
+    // Wat de regelaar doet, en waarom. Dit is het verschil tussen een huis met
+    // knoppen en een systeem.
+    const actie = this.toestand(this._ids.sensor_regelactie);
+    const modusToestand = this.toestand(this._ids.select_regelmodus);
+    const modus = modusToestand ? modusToestand.state : "handmatig";
+    const beschrijving = MODUSSEN.find((regel) => regel.sleutel === modus);
+    const modusNaam = beschrijving ? beschrijving.naam : modus;
+    const modusIco = beschrijving ? beschrijving.ico : "robot";
+    const redenen =
+      actie && actie.attributes && Array.isArray(actie.attributes.alle_redenen)
+        ? actie.attributes.alle_redenen
+        : [];
+    const knelpunt = !!(actie && actie.attributes && actie.attributes.knelpunt);
+    const ingegrepen = !!(actie && actie.attributes && actie.attributes.ingegrepen);
+
+    if (knelpunt) {
+      this._toonRegel("knelpunt", "zekering", modusNaam, redenen[0] || "", redenen[1] || "");
+    } else if (ingegrepen && redenen.length) {
+      this._toonRegel("actief", modusIco, modusNaam, redenen[0], redenen.slice(1).join(" "));
+    } else {
+      this._toonRegel(
+        "rust",
+        modusIco,
+        modusNaam,
+        "De regelaar laat het aan jou over.",
+        "Kies een andere regelmodus om te zien wat een EMS zelf zou doen."
+      );
+    }
+  }
+
+  _toonRegel(soort, ico, stand, reden, meer) {
+    const blok = this.zoek("#regelblok");
+    if (!blok) return;
+    blok.setAttribute("data-soort", soort);
+    this.zoek("#regelico").innerHTML = icoon(ico, 16);
+    tekst(this.zoek("#regelstand"), stand);
+    tekst(this.zoek("#regelreden"), reden);
+    tekst(this.zoek("#regelmeer"), meer || "");
   }
 
   getCardSize() {
-    return 5;
+    return 6;
   }
 }
 

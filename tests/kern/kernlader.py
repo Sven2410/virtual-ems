@@ -29,7 +29,14 @@ COMPONENT = REPO / "custom_components" / "virtual_ems"
 
 #: De bestanden die samen de rekenkern vormen. Geen van vier mag Home Assistant
 #: nodig hebben.
-KERNBESTANDEN: tuple[str, ...] = ("const.py", "simulation.py", "scenarios.py", "catalog.py")
+KERNBESTANDEN: tuple[str, ...] = (
+    "const.py",
+    "regelaar.py",
+    "zekering.py",
+    "simulation.py",
+    "scenarios.py",
+    "catalog.py",
+)
 
 PAKKET = "virtual_ems_kern"
 #: De naam is ook buiten dit bestand nodig, bijvoorbeeld om bundelversie.py
@@ -42,6 +49,8 @@ if PAKKET not in sys.modules:
     sys.modules[PAKKET] = _pakket
 
 const = importlib.import_module(f"{PAKKET}.const")
+regelaar = importlib.import_module(f"{PAKKET}.regelaar")
+zekering = importlib.import_module(f"{PAKKET}.zekering")
 simulation = importlib.import_module(f"{PAKKET}.simulation")
 scenarios = importlib.import_module(f"{PAKKET}.scenarios")
 catalog = importlib.import_module(f"{PAKKET}.catalog")
@@ -55,6 +64,16 @@ Totals = simulation.Totals
 solar_position = simulation.solar_position
 clear_sky_dni = simulation.clear_sky_dni
 
+Situatie = regelaar.Situatie
+Besluit = regelaar.Besluit
+bepaal = regelaar.bepaal
+MODUSSEN = regelaar.MODUSSEN
+MODUS_HANDMATIG = regelaar.MODUS_HANDMATIG
+MODUS_ZELFCONSUMPTIE = regelaar.MODUS_ZELFCONSUMPTIE
+MODUS_PIEKSCHEREN = regelaar.MODUS_PIEKSCHEREN
+
+Zekering = zekering.Zekering
+
 SCENARIOS = scenarios.SCENARIOS
 apply_scenario = scenarios.apply_scenario
 
@@ -66,5 +85,6 @@ APPLIANCES = const.APPLIANCES
 DOMAIN = const.DOMAIN
 DEFAULT_NAME = const.DEFAULT_NAME
 SERVICE_RESET = const.SERVICE_RESET
+SERVICE_HERSTEL_ZEKERING = const.SERVICE_HERSTEL_ZEKERING
 SERVICE_SET_SCENARIO = const.SERVICE_SET_SCENARIO
 UPDATE_INTERVAL_SECONDS = const.UPDATE_INTERVAL_SECONDS

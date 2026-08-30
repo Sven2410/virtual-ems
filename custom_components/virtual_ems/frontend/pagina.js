@@ -69,6 +69,7 @@ export class PaginaKaart extends Kaart {
     onderdelen.push("<virtual-ems-kop></virtual-ems-kop>");
     onderdelen.push("<virtual-ems-kpis></virtual-ems-kpis>");
     if (docent) onderdelen.push("<virtual-ems-scenarios></virtual-ems-scenarios>");
+    onderdelen.push("<virtual-ems-regelaar></virtual-ems-regelaar>");
     onderdelen.push("<virtual-ems-balken></virtual-ems-balken>");
     onderdelen.push("<virtual-ems-bediening></virtual-ems-bediening>");
     onderdelen.push("<virtual-ems-meter></virtual-ems-meter>");
@@ -87,7 +88,10 @@ export class PaginaKaart extends Kaart {
     const slug = this._config.installatie;
     const docent = this._config.weergave === "docent";
 
-    const kinderen = this.zoekAlle("virtual-ems-kop, virtual-ems-kpis, virtual-ems-balken, virtual-ems-bediening, virtual-ems-meter, virtual-ems-scenarios");
+    const kinderen = this.zoekAlle(
+      "virtual-ems-kop, virtual-ems-kpis, virtual-ems-regelaar, virtual-ems-balken, " +
+        "virtual-ems-bediening, virtual-ems-meter, virtual-ems-scenarios"
+    );
     kinderen.forEach((kind) => {
       if (!kind._configGezet) {
         if (typeof kind.setConfig === "function") {

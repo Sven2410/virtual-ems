@@ -112,6 +112,37 @@ SENSORS: tuple[VirtualEmsSensorDescription, ...] = (
     _power("net_vermogen", "mdi:transmission-tower", lambda s: s.grid_power_w),
     _energy("net_afname", "mdi:transmission-tower-export", lambda s: s.totals.grid_import_kwh),
     _energy("net_teruglevering", "mdi:transmission-tower-import", lambda s: s.totals.grid_export_kwh),
+    # Wat de regelaar doet. Dit is het verschil tussen een installatie en een
+    # systeem, en het hoort dus gewoon als entiteit te bestaan.
+    VirtualEmsSensorDescription(
+        key="regelactie",
+        icon="mdi:robot-industrial",
+        value_fn=lambda s: (s.control_reason or "geen ingreep")[:255],
+        attributes_fn=lambda c, s: {
+            "alle_redenen": list(s.control_reasons),
+            "ingegrepen": s.control_intervened,
+            "knelpunt": s.control_bottleneck,
+        },
+    ),
+    _power("laadpaal_limiet", "mdi:ev-plug-type2", lambda s: s.ev_allowed_w),
+    _power("batterij_opdracht", "mdi:home-battery-outline", lambda s: s.battery_command_w),
+    _power("hoogste_piek", "mdi:chart-timeline-variant", lambda s: s.totals.peak_import_w),
+    VirtualEmsSensorDescription(
+        key="zekering_warmte",
+        icon="mdi:fuse-alert",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        value_fn=lambda s: s.fuse_heat_pct,
+        attributes_fn=lambda c, s: {
+            "gesprongen": s.fuse_blown,
+            "smelt_over_s": (
+                None
+                if c.simulation.zekering.resterende_tijd_s(s.grid_power_w) is None
+                else round(c.simulation.zekering.resterende_tijd_s(s.grid_power_w))
+            ),
+        },
+    ),
     # Kentallen die een EMS beoordelen
     VirtualEmsSensorDescription(
         key="aansluiting_belasting",

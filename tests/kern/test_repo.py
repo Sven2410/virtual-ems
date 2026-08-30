@@ -21,6 +21,7 @@ from kernlader import (  # noqa: E402
     ENTITY_KEYS,
     KERNBESTANDEN,
     SCENARIOS,
+    SERVICE_HERSTEL_ZEKERING,
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
     UPDATE_INTERVAL_SECONDS,
@@ -130,7 +131,7 @@ def test_elk_scenario_heeft_een_leesbare_naam(taal: str):
 @pytest.mark.parametrize("taal", TALEN)
 def test_beide_services_zijn_vertaald(taal: str):
     services = vertaling(taal)["services"]
-    assert set(services) == {SERVICE_SET_SCENARIO, SERVICE_RESET}
+    assert set(services) == {SERVICE_SET_SCENARIO, SERVICE_RESET, SERVICE_HERSTEL_ZEKERING}
     for naam, blok in services.items():
         assert blok["name"] and blok["description"], naam
 
@@ -163,7 +164,7 @@ def test_nederlandse_teksten_bevatten_geen_gedachtestreepjes(pad: Path):
 
 def test_services_yaml_beschrijft_precies_de_bestaande_services():
     services = yaml.safe_load((COMPONENT / "services.yaml").read_text(encoding="utf-8"))
-    assert set(services) == {SERVICE_SET_SCENARIO, SERVICE_RESET}
+    assert set(services) == {SERVICE_SET_SCENARIO, SERVICE_RESET, SERVICE_HERSTEL_ZEKERING}
     for naam, blok in services.items():
         assert blok["name"], naam
         assert blok["description"], naam

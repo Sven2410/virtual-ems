@@ -19,6 +19,11 @@ export const SENSOREN = [
   "net_teruglevering",
   "aansluiting_belasting",
   "zelfbenutting",
+  "hoogste_piek",
+  "regelactie",
+  "laadpaal_limiet",
+  "batterij_opdracht",
+  "zekering_warmte",
   "zonnehoogte",
   "simulatietijd",
   "wasmachine_verbruik",
@@ -32,10 +37,38 @@ export const NUMMERS = [
   "batterij_min_soc",
   "batterij_max_soc",
   "laadpaal_vermogen",
+  "piekgrens",
   "tijdversnelling",
 ];
 
-export const SCHAKELAARS = ["laadpaal_actief", "wasmachine", "boiler", "airco"];
+export const SCHAKELAARS = [
+  "laadpaal_actief",
+  "aansluitbewaking",
+  "wasmachine",
+  "boiler",
+  "airco",
+];
+
+export const KEUZES = ["regelmodus"];
+
+export const BINAIRE = ["hoofdzekering"];
+
+//: De standen van de regelmodus, in dezelfde volgorde als regelaar.py.
+export const MODUSSEN = [
+  { sleutel: "handmatig", naam: "Handmatig", uitleg: "Jij stuurt", ico: "schuif" },
+  {
+    sleutel: "zelfconsumptie",
+    naam: "Zelfconsumptie",
+    uitleg: "Zo min mogelijk over de meter",
+    ico: "blad",
+  },
+  {
+    sleutel: "piekscheren",
+    naam: "Piekscheren",
+    uitleg: "Afname onder een grens",
+    ico: "meter",
+  },
+];
 
 export const APPARATEN = ["wasmachine", "boiler", "airco"];
 
@@ -79,6 +112,12 @@ export function ids(slug) {
   });
   SCHAKELAARS.forEach((sleutel) => {
     kaart["switch_" + sleutel] = "switch." + slug + "_" + sleutel;
+  });
+  KEUZES.forEach((sleutel) => {
+    kaart["select_" + sleutel] = "select." + slug + "_" + sleutel;
+  });
+  BINAIRE.forEach((sleutel) => {
+    kaart["binary_sensor_" + sleutel] = "binary_sensor." + slug + "_" + sleutel;
   });
   return kaart;
 }

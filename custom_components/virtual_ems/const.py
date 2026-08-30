@@ -83,6 +83,7 @@ HOUSEHOLD_PROFILE: Final[tuple[float, ...]] = (
 
 SERVICE_SET_SCENARIO: Final = "set_scenario"
 SERVICE_RESET: Final = "reset"
+SERVICE_HERSTEL_ZEKERING: Final = "zekering_herstellen"
 
 ATTR_SCENARIO: Final = "scenario"
 ATTR_ONLY_COUNTERS: Final = "alleen_tellers"
@@ -93,4 +94,4 @@ STORAGE_VERSION: Final = 1
 STORAGE_KEY_TEMPLATE: Final = f"{DOMAIN}.{{entry_id}}"
 STORAGE_SAVE_DELAY: Final = 10.0
 
-PLATFORMS: Final[list[str]] = ["number", "sensor", "switch"]
+PLATFORMS: Final[list[str]] = ["binary_sensor", "number", "select", "sensor", "switch"]

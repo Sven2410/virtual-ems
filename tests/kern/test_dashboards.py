@@ -17,6 +17,7 @@ yaml = pytest.importorskip("yaml")
 from kernlader import (  # noqa: E402
     DOMAIN,
     SCENARIOS,
+    SERVICE_HERSTEL_ZEKERING,
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
     entity_ids,
@@ -91,7 +92,11 @@ def test_elke_entiteit_op_het_dashboard_bestaat_ook_echt(bestand: str):
 
 @pytest.mark.parametrize("bestand", ["cursist-dashboard.yaml", "docent-dashboard.yaml"])
 def test_dashboards_roepen_alleen_bestaande_services_aan(bestand: str):
-    toegestaan = {f"{DOMAIN}.{SERVICE_SET_SCENARIO}", f"{DOMAIN}.{SERVICE_RESET}"}
+    toegestaan = {
+        f"{DOMAIN}.{SERVICE_SET_SCENARIO}",
+        f"{DOMAIN}.{SERVICE_RESET}",
+        f"{DOMAIN}.{SERVICE_HERSTEL_ZEKERING}",
+    }
     for actie in verzamel_acties(laad(bestand), []):
         naam = actie["perform_action"]
         if not naam.startswith(f"{DOMAIN}."):
