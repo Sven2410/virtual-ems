@@ -570,3 +570,200 @@ def test_zelfbenutting_zakt_nooit_onder_nul():
     sim.totals.pv_kwh = 1.0
     sim.totals.grid_export_kwh = 4.0
     assert sim.self_consumption_pct() == 0.0
+
+
+# --- De regelaar aan het werk in de hele simulatie ---------------------------
+
+
+def alles_aan(sim) -> None:
+    """Wat een cursist doet als hij wil weten waar de grens ligt."""
+    sim.setpoints.ev_enabled = True
+    sim.setpoints.ev_setpoint_w = 11000.0
+    sim.setpoints.battery_setpoint_w = 5000.0
+    for naam in ("wasmachine", "boiler", "airco"):
+        sim.setpoints.appliances[naam] = True
+
+
+def test_de_regelaar_houdt_de_installatie_binnen_de_aansluiting():
+    """Alle schuiven omhoog en alle apparaten aan, met het vangnet erbij."""
+    sim = maak_simulatie()
+    alles_aan(sim)
+    sim.setpoints.bewaking = True
+    sim.set_soc_pct(50.0)
+
+    snapshot = sim.step(datetime(2026, 3, 15, 19, 0, tzinfo=AMSTERDAM), 60)
+
+    grens = sim.config.connection_power_w
+    assert snapshot.grid_power_w <= grens + 1e-6
+    assert snapshot.connection_load_pct <= 100.0 + 1e-9
+    assert snapshot.control_intervened is True
+    assert snapshot.control_reason
+    # Laden kan wachten, dus dat gaat er als eerste af.
+    assert snapshot.battery_command_w < 5000.0
+
+
+def test_zonder_vangnet_loopt_de_aansluiting_wel_over():
+    sim = maak_simulatie()
+    alles_aan(sim)
+    sim.setpoints.bewaking = False
+
+    snapshot = sim.step(datetime(2026, 3, 15, 19, 0, tzinfo=AMSTERDAM), 60)
+
+    assert snapshot.connection_load_pct > 100.0
+    assert snapshot.control_intervened is False
+
+
+def test_te_lang_te_veel_laat_de_hoofdzekering_springen():
+    """Een woning met één fase van 25 A haalt dit niet."""
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=1)
+    alles_aan(sim)
+    sim.setpoints.bewaking = False
+
+    moment = datetime(2026, 3, 15, 19, 0, tzinfo=AMSTERDAM)
+    gesprongen_na = None
+    for minuut in range(60):
+        snapshot = sim.step(moment, 60)
+        if snapshot.fuse_blown:
+            gesprongen_na = minuut + 1
+            break
+        moment += timedelta(minutes=1)
+
+    assert gesprongen_na is not None, "de zekering had allang moeten smelten"
+    assert snapshot.fuse_heat_pct == 100.0
+    assert "doorgesmolten" in snapshot.control_reason
+
+
+def test_met_het_vangnet_erbij_blijft_de_zekering_heel():
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=1)
+    alles_aan(sim)
+    sim.setpoints.bewaking = True
+    sim.set_soc_pct(80.0)
+
+    moment = datetime(2026, 3, 15, 19, 0, tzinfo=AMSTERDAM)
+    for _ in range(120):
+        snapshot = sim.step(moment, 60)
+        moment += timedelta(minutes=1)
+
+    assert snapshot.fuse_blown is False
+    # De laadpaal is het eerste dat eraan gaat.
+    assert snapshot.ev_allowed_w < 11000.0
+
+
+def test_een_gesprongen_zekering_zet_alles_stil():
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=1)
+    alles_aan(sim)
+    sim.setpoints.bewaking = False
+    sim.zekering.gesprongen = True
+
+    snapshot = sim.step(datetime(2026, 6, 21, 13, 0, tzinfo=AMSTERDAM), 60)
+
+    assert snapshot.pv_power_w == 0.0
+    assert snapshot.household_power_w == 0.0
+    assert snapshot.ev_power_w == 0.0
+    assert snapshot.battery_power_w == 0.0
+    assert snapshot.grid_power_w == 0.0
+    assert "hoofdzekering" in snapshot.control_reason
+
+
+def test_terugzetten_geeft_een_nieuwe_zekering():
+    sim = maak_simulatie()
+    sim.zekering.gesprongen = True
+    sim.zekering.warmte = 1.0
+
+    sim.reset()
+
+    assert sim.zekering.gesprongen is False
+    assert sim.zekering.warmte == 0.0
+
+
+def test_de_zekering_overleeft_een_herstart():
+    sim = maak_simulatie()
+    sim.zekering.warmte = 0.4
+    bewaard = sim.as_dict()
+
+    nieuw = maak_simulatie()
+    nieuw.restore(bewaard)
+    assert nieuw.zekering.warmte == pytest.approx(0.4)
+
+
+def test_zelfconsumptie_houdt_het_net_vrijwel_op_nul():
+    from kernlader import MODUS_ZELFCONSUMPTIE
+
+    sim = maak_simulatie()
+    sim.setpoints.modus = MODUS_ZELFCONSUMPTIE
+    sim.set_soc_pct(50.0)
+
+    moment = datetime(2026, 6, 21, 10, 0, tzinfo=AMSTERDAM)
+    saldi = []
+    for _ in range(60):
+        snapshot = sim.step(moment, 60)
+        saldi.append(abs(snapshot.grid_power_w))
+        moment += timedelta(minutes=1)
+
+    # De batterij kan het hele saldo aan, dus er hoort bijna niets over de
+    # aansluiting te gaan.
+    assert max(saldi) < 50.0
+
+
+def test_piekscheren_verlaagt_de_hoogste_piek_werkelijk():
+    """Dit is waar het om gaat: dezelfde dag, met en zonder regelaar."""
+    from kernlader import MODUS_HANDMATIG, MODUS_PIEKSCHEREN
+
+    def draai_dag(modus: str) -> float:
+        sim = maak_simulatie()
+        sim.setpoints.modus = modus
+        sim.setpoints.peak_limit_w = 2000.0
+        sim.set_soc_pct(100.0)
+        sim.setpoints.appliances["boiler"] = True
+        moment = datetime(2026, 12, 21, 17, 0, tzinfo=AMSTERDAM)
+        for _ in range(120):
+            sim.step(moment, 60)
+            moment += timedelta(minutes=1)
+        return sim.totals.peak_import_w
+
+    zonder = draai_dag(MODUS_HANDMATIG)
+    met = draai_dag(MODUS_PIEKSCHEREN)
+
+    assert zonder > 2500.0
+    assert met < zonder
+    assert met <= 2100.0
+
+
+def test_de_hoogste_piek_gaat_met_een_reset_mee_terug():
+    sim = maak_simulatie()
+    sim.setpoints.appliances["boiler"] = True
+    sim.step(datetime(2026, 12, 21, 18, 0, tzinfo=AMSTERDAM), 60)
+    assert sim.totals.peak_import_w > 0
+
+    sim.reset()
+    assert sim.totals.peak_import_w == 0.0
+
+
+def test_de_natuurkunde_beschermt_de_batterij_ook_los_van_de_regelaar():
+    """De grenzen zitten met opzet op twee plekken.
+
+    De regelaar knijpt een verzoek af zodat hij geen reden op het scherm zet
+    over vermogen dat er niet is. De natuurkunde knijpt het nog een keer af,
+    want die mag nooit een grens passeren, wat er ook aan gevraagd wordt. Deze
+    proef gaat langs de regelaar heen en spreekt de onderste laag rechtstreeks
+    aan; anders zou een fout daar niet meer opvallen.
+    """
+    sim = maak_simulatie(battery_capacity_kwh=10.0)
+    sim.setpoints.soc_max_pct = 80.0
+    sim.set_soc_pct(79.0)
+
+    for _ in range(60):
+        sim._battery_step(1_000_000.0, 1.0 / 60.0)
+        assert sim.soc_pct <= 80.0 + 1e-9
+    assert sim.soc_pct == pytest.approx(80.0, abs=1e-6)
+
+
+def test_de_natuurkunde_ontlaadt_nooit_onder_de_ondergrens():
+    sim = maak_simulatie(battery_capacity_kwh=10.0)
+    sim.setpoints.soc_min_pct = 20.0
+    sim.set_soc_pct(21.0)
+
+    for _ in range(60):
+        sim._battery_step(-1_000_000.0, 1.0 / 60.0)
+        assert sim.soc_pct >= 20.0 - 1e-9
+    assert sim.soc_pct == pytest.approx(20.0, abs=1e-6)

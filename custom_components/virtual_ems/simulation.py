@@ -28,6 +28,9 @@ from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from typing import Any
 
+from .regelaar import MODUS_HANDMATIG, Besluit, Situatie, bepaal
+from .zekering import Zekering
+
 # --- Natuurkundige constanten met bron ---------------------------------------
 
 #: Zonneconstante zoals gebruikt in de formule van Meinel & Meinel (1976), W/m2.
@@ -141,6 +144,12 @@ class Setpoints:
     ev_enabled: bool = False
     ev_setpoint_w: float = 3700.0
     time_factor: float = 1.0
+    #: Wat de regelaar probeert te bereiken. Zie regelaar.py.
+    modus: str = MODUS_HANDMATIG
+    #: Het vangnet dat de installatie binnen de aansluiting houdt.
+    bewaking: bool = True
+    #: De grens waar piekscheren op stuurt, in W.
+    peak_limit_w: float = 3000.0
     appliances: dict[str, bool] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
@@ -163,6 +172,10 @@ class Totals:
     household_kwh: float = 0.0
     grid_import_kwh: float = 0.0
     grid_export_kwh: float = 0.0
+    #: De hoogste afname sinds de laatste keer terugzetten, in W. Dit is geen
+    #: teller maar een record, en hij hoort wel bij de andere: hij gaat met een
+    #: reset mee terug naar nul.
+    peak_import_w: float = 0.0
     appliance_kwh: dict[str, float] = field(default_factory=dict)
 
     def as_dict(self) -> dict[str, Any]:
@@ -194,6 +207,24 @@ class Snapshot:
     battery_energy_kwh: float
 
     grid_power_w: float  # positief = afname, negatief = teruglevering
+
+    #: Wat de regelaar besloten heeft en waarom.
+    control_reason: str
+    control_reasons: tuple[str, ...]
+    control_intervened: bool
+    control_bottleneck: bool
+    #: Wat de regelaar de laadpaal en de batterij opdroeg, voor de natuurkunde
+    #: er nog iets van afknijpt. Het verschil met wat er werkelijk gebeurt is de
+    #: les.
+    ev_allowed_w: float
+    battery_command_w: float
+    #: Wat de omvormer had kunnen leveren maar niet mocht.
+    pv_curtailed_w: float
+
+    #: De hoofdzekering.
+    fuse_heat_pct: float
+    fuse_blown: bool
+
     #: Hoe vol de aansluiting zit, in procent van wat hij aankan.
     connection_load_pct: float
     #: Welk deel van de eigen opwek ook zelf gebruikt is, in procent. None
@@ -332,6 +363,7 @@ class Simulation:
 
         self.battery_energy_kwh = config.battery_capacity_kwh * 0.5
         self.ev_power_w = 0.0
+        self.zekering = Zekering(nominaal_w=config.connection_power_w)
         self._noise = 0.0
         self.last_snapshot: Snapshot | None = None
 
@@ -404,11 +436,15 @@ class Simulation:
             for name, power in self.config.appliances
         }
 
-    def _advance_ev(self, elapsed_s: float) -> float:
-        """Laat het laadvermogen oplopen of teruglopen naar de instelling."""
-        target = 0.0
-        if self.setpoints.ev_enabled:
-            target = max(0.0, min(self.setpoints.ev_setpoint_w, self.config.ev_max_power_w))
+    def ev_request_w(self) -> float:
+        """Wat de laadpaal zou vragen als niemand hem terugregelt."""
+        if not self.setpoints.ev_enabled:
+            return 0.0
+        return max(0.0, min(self.setpoints.ev_setpoint_w, self.config.ev_max_power_w))
+
+    def _advance_ev(self, target: float, elapsed_s: float) -> float:
+        """Laat het laadvermogen oplopen of teruglopen naar wat mag."""
+        target = max(0.0, min(target, self.config.ev_max_power_w))
 
         if elapsed_s <= 0:
             return self.ev_power_w
@@ -421,7 +457,37 @@ class Simulation:
             self.ev_power_w = max(target, self.ev_power_w - step)
         return self.ev_power_w
 
-    def _battery_step(self, hours: float) -> float:
+    def _soc_grenzen_kwh(self) -> tuple[float, float]:
+        """De onder- en bovengrens in kWh, met omgedraaide grenzen verwisseld."""
+        soc_min = max(0.0, min(100.0, self.setpoints.soc_min_pct))
+        soc_max = max(0.0, min(100.0, self.setpoints.soc_max_pct))
+        if soc_max < soc_min:
+            soc_min, soc_max = soc_max, soc_min
+        capaciteit = self.config.battery_capacity_kwh
+        return capaciteit * soc_min / 100.0, capaciteit * soc_max / 100.0
+
+    def max_charge_w(self, hours: float) -> float:
+        """Wat er nu werkelijk in de batterij past, in W."""
+        cfg = self.config
+        _onder, boven = self._soc_grenzen_kwh()
+        ruimte_kwh = max(0.0, boven - self.battery_energy_kwh)
+        if hours <= 0:
+            return cfg.battery_max_power_w if ruimte_kwh > 0 else 0.0
+        eta = cfg.one_way_efficiency
+        past_w = (ruimte_kwh / hours) * 1000.0 / eta if eta > 0 else 0.0
+        return max(0.0, min(cfg.battery_max_power_w, past_w))
+
+    def max_discharge_w(self, hours: float) -> float:
+        """Wat er nu werkelijk uit de batterij kan, in W."""
+        cfg = self.config
+        onder, _boven = self._soc_grenzen_kwh()
+        beschikbaar_kwh = max(0.0, self.battery_energy_kwh - onder)
+        if hours <= 0:
+            return cfg.battery_max_power_w if beschikbaar_kwh > 0 else 0.0
+        kan_w = (beschikbaar_kwh / hours) * 1000.0 * cfg.one_way_efficiency
+        return max(0.0, min(cfg.battery_max_power_w, kan_w))
+
+    def _battery_step(self, gevraagd_w: float, hours: float) -> float:
         """Werk de batterij bij en geef het werkelijke AC-vermogen terug.
 
         Positief is laden, negatief is ontladen. Het gevraagde vermogen wordt
@@ -430,7 +496,7 @@ class Simulation:
         """
         cfg = self.config
         max_power = cfg.battery_max_power_w
-        request = max(-max_power, min(max_power, self.setpoints.battery_setpoint_w))
+        request = max(-max_power, min(max_power, gevraagd_w))
 
         soc_min = max(0.0, min(100.0, self.setpoints.soc_min_pct))
         soc_max = max(0.0, min(100.0, self.setpoints.soc_max_pct))
@@ -502,15 +568,59 @@ class Simulation:
 
         self._advance_noise(elapsed_s)
 
-        pv_w, poa, elevation = self.pv_power(moment)
+        pv_mogelijk, poa, elevation = self.pv_power(moment)
         appliances = self.appliance_powers()
         household_w = self.base_load(moment) + sum(appliances.values())
-        ev_w = self._advance_ev(elapsed_s)
-        battery_w = self._battery_step(hours)
 
-        # Saldo op de netaansluiting: alles wat het huis vraagt minus alles wat
-        # er lokaal geproduceerd of ontladen wordt. Positief is afname.
-        grid_w = household_w + ev_w + battery_w - pv_w
+        if self.zekering.gesprongen:
+            # Een doorgesmolten hoofdzekering betekent geen spanning in huis.
+            # De omvormer valt uit, de laadpaal stopt, de batterij doet niets en
+            # de apparaten staan wel aan maar krijgen niets. Alles nul dus, en
+            # er loopt geen enkele teller door.
+            besluit = Besluit(battery_w=0.0, ev_w=0.0, pv_w=0.0)
+            besluit.redenen.append(
+                "De hoofdzekering is doorgesmolten. Er staat geen spanning meer op de "
+                "installatie; de docent moet hem vervangen."
+            )
+            pv_w = 0.0
+            household_w = 0.0
+            appliances = {naam: 0.0 for naam in appliances}
+            ev_w = 0.0
+            self.ev_power_w = 0.0
+            battery_w = 0.0
+            grid_w = 0.0
+        else:
+            # Hier zit het verschil tussen een installatie en een systeem: de
+            # regelaar beslist eerst wat er moet gebeuren, daarna doet de
+            # natuurkunde wat er kan.
+            besluit = bepaal(
+                Situatie(
+                    pv_w=pv_mogelijk,
+                    household_w=household_w,
+                    ev_request_w=self.ev_request_w(),
+                    battery_request_w=self.setpoints.battery_setpoint_w,
+                    max_charge_w=self.max_charge_w(hours),
+                    max_discharge_w=self.max_discharge_w(hours),
+                    connection_w=self.config.connection_power_w,
+                ),
+                modus=self.setpoints.modus,
+                bewaking=self.setpoints.bewaking,
+                piekgrens_w=self.setpoints.peak_limit_w,
+            )
+
+            pv_w = besluit.pv_w
+            ev_w = self._advance_ev(besluit.ev_w, elapsed_s)
+            battery_w = self._battery_step(besluit.battery_w, hours)
+
+            # Saldo op de netaansluiting: alles wat het huis vraagt minus alles
+            # wat er lokaal geproduceerd of ontladen wordt. Positief is afname.
+            grid_w = household_w + ev_w + battery_w - pv_w
+
+            if self.zekering.stap(grid_w, elapsed_s):
+                besluit.redenen.insert(
+                    0,
+                    "De hoofdzekering is zojuist doorgesmolten: te veel, te lang.",
+                )
 
         if hours > 0:
             self.totals.pv_kwh += pv_w * hours / 1000.0
@@ -522,6 +632,10 @@ class Simulation:
                 self.totals.appliance_kwh[name] = (
                     self.totals.appliance_kwh.get(name, 0.0) + power * hours / 1000.0
                 )
+
+        # De hoogste afname is geen teller maar een record, en die telt ook mee
+        # als er geen tijd verstreken is.
+        self.totals.peak_import_w = max(self.totals.peak_import_w, grid_w)
 
         snapshot = Snapshot(
             moment=moment,
@@ -538,6 +652,15 @@ class Simulation:
             battery_soc_pct=self.soc_pct,
             battery_energy_kwh=self.battery_energy_kwh,
             grid_power_w=grid_w,
+            control_reason=besluit.reden,
+            control_reasons=tuple(besluit.redenen),
+            control_intervened=besluit.ingegrepen,
+            control_bottleneck=besluit.knelpunt,
+            ev_allowed_w=besluit.ev_w,
+            battery_command_w=besluit.battery_w,
+            pv_curtailed_w=max(0.0, pv_mogelijk - pv_w) if not self.zekering.gesprongen else 0.0,
+            fuse_heat_pct=self.zekering.warmte_pct,
+            fuse_blown=self.zekering.gesprongen,
             totals=replace(self.totals, appliance_kwh=dict(self.totals.appliance_kwh)),
         )
         self.last_snapshot = snapshot
@@ -552,6 +675,8 @@ class Simulation:
             self.totals.appliance_kwh[name] = 0.0
 
         self.set_soc_pct(start_soc_pct)
+        # Een nieuwe lesgroep begint met een hele zekering.
+        self.zekering.herstel()
 
         if not only_counters:
             self.setpoints = Setpoints()
@@ -569,6 +694,7 @@ class Simulation:
             "noise": self._noise,
             "totals": self.totals.as_dict(),
             "setpoints": self.setpoints.as_dict(),
+            "zekering": self.zekering.as_dict(),
         }
 
     def restore(self, data: dict[str, Any]) -> None:
@@ -585,6 +711,8 @@ class Simulation:
             self.totals = Totals.from_dict(data["totals"])
         if isinstance(data.get("setpoints"), dict):
             self.setpoints = Setpoints.from_dict(data["setpoints"])
+        if isinstance(data.get("zekering"), dict):
+            self.zekering.restore(data["zekering"])
         for name, _power in self.config.appliances:
             self.setpoints.appliances.setdefault(name, False)
             self.totals.appliance_kwh.setdefault(name, 0.0)

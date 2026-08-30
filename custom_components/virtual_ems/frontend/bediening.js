@@ -9,7 +9,7 @@ import { APPARATEN, ids } from "./entiteiten.js";
 // Een schuif mag tijdens het slepen niet elke pixel naar de server sturen.
 const SMOORTIJD_MS = 250;
 
-const BEDIEN_CSS =
+export const BEDIEN_CSS =
   kaartCss +
   `
   .groep + .groep { margin-top: 22px; }
@@ -146,7 +146,7 @@ const BEDIEN_CSS =
 `;
 
 /** Basis voor kaarten die schuiven en schakelaars tekenen. */
-class BedieningBasis extends Kaart {
+export class BedieningBasis extends Kaart {
   css() {
     return BEDIEN_CSS;
   }
@@ -544,6 +544,7 @@ const SCENARIOS = [
   { sleutel: "zonnige_dag", naam: "Zonnige dag", ico: "zon" },
   { sleutel: "bewolkte_dag", naam: "Bewolkte dag", ico: "wolk" },
   { sleutel: "piekbelasting_avond", naam: "Piek in de avond", ico: "vonk" },
+  { sleutel: "piek_met_regelaar", naam: "Piek met regelaar", ico: "robot" },
   { sleutel: "lege_batterij", naam: "Lege batterij", ico: "batterij" },
 ];
 

@@ -47,6 +47,11 @@ SENSOR_KEYS: tuple[str, ...] = (
     "net_teruglevering",
     "aansluiting_belasting",
     "zelfbenutting",
+    "hoogste_piek",
+    "regelactie",
+    "laadpaal_limiet",
+    "batterij_opdracht",
+    "zekering_warmte",
     "zonnehoogte",
     "simulatietijd",
 ) + tuple(f"{key}_verbruik" for key in APPLIANCES)
@@ -57,14 +62,21 @@ NUMBER_KEYS: tuple[str, ...] = (
     "batterij_min_soc",
     "batterij_max_soc",
     "laadpaal_vermogen",
+    "piekgrens",
     "tijdversnelling",
 )
 
-SWITCH_KEYS: tuple[str, ...] = ("laadpaal_actief",) + tuple(APPLIANCES)
+SWITCH_KEYS: tuple[str, ...] = ("laadpaal_actief", "aansluitbewaking") + tuple(APPLIANCES)
+
+SELECT_KEYS: tuple[str, ...] = ("regelmodus",)
+
+BINARY_SENSOR_KEYS: tuple[str, ...] = ("hoofdzekering",)
 
 ENTITY_KEYS: dict[str, tuple[str, ...]] = {
-    "sensor": SENSOR_KEYS,
+    "binary_sensor": BINARY_SENSOR_KEYS,
     "number": NUMBER_KEYS,
+    "select": SELECT_KEYS,
+    "sensor": SENSOR_KEYS,
     "switch": SWITCH_KEYS,
 }
 

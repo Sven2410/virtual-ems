@@ -10,6 +10,7 @@ from homeassistant.components.switch import (
     SwitchEntity,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -25,7 +26,10 @@ async def async_setup_entry(
 ) -> None:
     """Zet de schakelaars klaar."""
     coordinator: VirtualEmsCoordinator = entry.runtime_data
-    entities: list[SwitchEntity] = [VirtualEmsChargerSwitch(coordinator)]
+    entities: list[SwitchEntity] = [
+        VirtualEmsChargerSwitch(coordinator),
+        VirtualEmsBewakingSwitch(coordinator),
+    ]
     entities.extend(
         VirtualEmsApplianceSwitch(coordinator, key, str(spec["icon"]), float(spec["power_w"]))
         for key, spec in APPLIANCES.items()
@@ -51,6 +55,32 @@ class VirtualEmsChargerSwitch(VirtualEmsEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.coordinator.async_set_ev_enabled(False)
+
+
+class VirtualEmsBewakingSwitch(VirtualEmsEntity, SwitchEntity):
+    """Het vangnet dat de installatie binnen de aansluiting houdt.
+
+    Uit zetten mag: dat is de oefening waarin je ziet wat er zonder gebeurt. De
+    hoofdzekering doet dan zijn werk, en dat kost de klas een druk op de knop
+    van de docent.
+    """
+
+    _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_icon = "mdi:shield-check"
+    _attr_entity_category = EntityCategory.CONFIG
+
+    def __init__(self, coordinator: VirtualEmsCoordinator) -> None:
+        super().__init__(coordinator, "aansluitbewaking", ENTITY_ID_FORMAT)
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.simulation.setpoints.bewaking
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        await self.coordinator.async_set_bewaking(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        await self.coordinator.async_set_bewaking(False)
 
 
 class VirtualEmsApplianceSwitch(VirtualEmsEntity, SwitchEntity):

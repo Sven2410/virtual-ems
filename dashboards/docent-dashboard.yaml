@@ -68,6 +68,23 @@ views:
                   data:
                     scenario: lege_batterij
 
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: Piek met regelaar
+                icon: mdi:robot-industrial
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.set_scenario
+                  data:
+                    scenario: piek_met_regelaar
+              - type: button
+                name: Nieuwe zekering
+                icon: mdi:fuse
+                tap_action:
+                  action: perform-action
+                  perform_action: virtual_ems.zekering_herstellen
+
           - type: button
             name: Alles terugzetten
             icon: mdi:restart
@@ -93,6 +110,22 @@ views:
             heading: Rechtstreeks bedienen
             heading_style: title
             icon: mdi:tune
+
+          - type: entities
+            title: De regelaar
+            entities:
+              - entity: select.virtueel_ems_regelmodus
+                name: Regelmodus
+              - entity: number.virtueel_ems_piekgrens
+                name: Piekgrens
+              - entity: switch.virtueel_ems_aansluitbewaking
+                name: Aansluitbewaking
+              - entity: binary_sensor.virtueel_ems_hoofdzekering
+                name: Hoofdzekering
+              - entity: sensor.virtueel_ems_zekering_warmte
+                name: Zekering warmte
+              - entity: sensor.virtueel_ems_regelactie
+                name: Wat de regelaar deed
 
           - type: entities
             title: Instelbare waarden
@@ -204,6 +237,8 @@ views:
                 name: Netafname
               - entity: sensor.virtueel_ems_net_teruglevering
                 name: Teruglevering
+              - entity: sensor.virtueel_ems_hoogste_piek
+                name: Hoogste piek
               - entity: sensor.virtueel_ems_wasmachine_verbruik
                 name: Wasmachine
               - entity: sensor.virtueel_ems_boiler_verbruik

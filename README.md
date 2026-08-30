@@ -23,9 +23,10 @@ Raspberry Pi 5 met een kale Home Assistant is genoeg.
 3. [De dashboards installeren](#de-dashboards-installeren)
 4. [Kioskschermen en het cursistaccount](#kioskschermen-en-het-cursistaccount)
 5. [Het energiedashboard koppelen](#het-energiedashboard-koppelen)
-6. [Overzicht van alle entiteiten](#overzicht-van-alle-entiteiten)
+6. [Wat er precies gestuurd wordt](#wat-er-precies-gestuurd-wordt)
+7. [Overzicht van alle entiteiten](#overzicht-van-alle-entiteiten)
 7. [Services voor de docent](#services-voor-de-docent)
-8. [Drie oefeningen voor cursisten](#drie-oefeningen-voor-cursisten)
+8. [Vier oefeningen voor cursisten](#vier-oefeningen-voor-cursisten)
 9. [Hoe de simulatie rekent](#hoe-de-simulatie-rekent)
 10. [Proeven draaien](#proeven-draaien)
 
@@ -311,6 +312,65 @@ Twee dingen om te weten:
 
 ---
 
+## Wat er precies gestuurd wordt
+
+Dit is het stuk dat van een installatie een energiemanagementsysteem maakt. Elke
+ronde, dus elke vijf seconden, doet de regelaar hetzelfde rondje:
+
+1. Hij kijkt wat de zon levert, wat het huis vraagt en wat de laadpaal wil.
+2. Hij bepaalt aan de hand van de **regelmodus** wat de batterij moet doen.
+3. Hij legt daar het **vangnet** overheen: past dit binnen wat de aansluiting
+   aankan? Zo niet, dan regelt hij terug.
+4. Hij schrijft op wat hij besloten heeft en waarom. Dat staat bovenaan het
+   dashboard en in `sensor.<naam>_regelactie`.
+
+Pas daarna komt de natuurkunde aan de beurt: de batterij kan niet meer geven dan
+erin zit, en de laadpaal loopt in tien seconden op. Het verschil tussen wat de
+regelaar opdroeg (`sensor.<naam>_batterij_opdracht`) en wat er werkelijk gebeurt
+(`sensor.<naam>_batterij_vermogen_actueel`) is een les op zich.
+
+### De drie standen
+
+| Stand | Waar hij op stuurt |
+| --- | --- |
+| **Handmatig** | Nergens op. Jij zet de batterij zelf. Dit is de stand waarin je merkt hoe lastig het met de hand is. |
+| **Zelfconsumptie** | Zo min mogelijk over de meter. Overschot van de zon gaat de batterij in, een tekort haalt hij eruit. |
+| **Piekscheren** | De afname onder een grens houden die jij instelt. Daarboven springt de batterij bij, daaronder laadt hij met het overschot. |
+
+### Het vangnet
+
+`switch.<naam>_aansluitbewaking` staat standaard aan en werkt in elke stand. Hij
+houdt de installatie binnen wat de aansluiting aankan, en regelt in deze
+volgorde terug:
+
+1. **Het laden van de batterij** gaat als eerste weg. Dat kan wachten.
+2. **De laadpaal** wordt teruggeregeld. Een auto laadt gewoon wat langzamer.
+3. **De batterij springt bij** en ontlaadt om het net te ontlasten.
+4. Lukt het dan nog niet, dan **zegt hij dat**: een wasmachine kun je niet
+   halverwege afknijpen. Dan moet er iemand iets uitzetten.
+
+Bij te veel teruglevering gaat het andersom: eerst de batterij vullen, en pas
+als laatste de omvormer terugregelen, want die opbrengst ben je kwijt.
+
+### En als je het vangnet uitzet
+
+Dan gebeurt er wat er in een echte woning gebeurt. De hoofdzekering wordt warm,
+en na verloop van tijd smelt hij door. Daarna staat er geen spanning meer op de
+installatie: de panelen leveren niets, de batterij doet niets, de laadpaal stopt
+en alle tellers staan stil. Alleen de docent kan hem vervangen, met de service
+`virtual_ems.zekering_herstellen` of met de knop op het docentdashboard.
+
+Het warmtemodel is geijkt op IEC 60269-1 voor een gG-smeltveiligheid: bij 1,25
+keer de nominale stroom smelt hij binnen het uur niet, bij 1,6 keer wel.
+`sensor.<naam>_zekering_warmte` laat zien hoe warm hij is, en de kaart rekent
+voor hoe lang hij deze belasting nog volhoudt.
+
+> Met een aansluiting van 3 maal 25 A krijg je hem met alles aan niet stuk, en
+> dat klopt: 22 kW op 17,25 kW is 1,3 keer de nominale stroom, en dat houdt een
+> echte zekering uren vol. Wil je hem zien smelten, zet de aansluiting dan in de
+> opties op 1 fase van 25 A. Dan is dezelfde belasting bijna vier keer de
+> nominale stroom en is het binnen een paar minuten gesimuleerde tijd voorbij.
+
 ## Overzicht van alle entiteiten
 
 De voorvoegsels hieronder gaan uit van de naam `Virtueel EMS`.
@@ -378,6 +438,20 @@ dat verschil is de les.
 | `sensor.virtueel_ems_aansluiting_belasting` | % | Hoe vol de aansluiting zit. Teruglevering belast hem net zo goed als afname |
 | `sensor.virtueel_ems_zelfbenutting` | % | Welk deel van de eigen opwek je ook zelf gebruikt hebt. Onbekend zolang er niets opgewekt is |
 
+### De regelaar
+
+| Entiteit | Eenheid | Wat het is |
+| --- | --- | --- |
+| `select.virtueel_ems_regelmodus` | | Handmatig, zelfconsumptie of piekscheren |
+| `number.virtueel_ems_piekgrens` | W | De grens waar piekscheren op stuurt |
+| `switch.virtueel_ems_aansluitbewaking` | | Het vangnet dat binnen de aansluiting blijft |
+| `sensor.virtueel_ems_regelactie` | | Wat de regelaar deed, in gewone taal. Alle redenen staan als kenmerk erbij |
+| `sensor.virtueel_ems_batterij_opdracht` | W | Wat de regelaar de batterij opdroeg |
+| `sensor.virtueel_ems_laadpaal_limiet` | W | Wat de laadpaal van de regelaar mag |
+| `sensor.virtueel_ems_hoogste_piek` | W | De hoogste afname sinds de laatste keer terugzetten |
+| `binary_sensor.virtueel_ems_hoofdzekering` | | Aan betekent: doorgesmolten |
+| `sensor.virtueel_ems_zekering_warmte` | % | Hoe warm de hoofdzekering is |
+
 ### Simulatie
 
 | Entiteit | Eenheid | Wat het is |
@@ -405,6 +479,7 @@ blijven staan.
 | Scenario | Wat het klaarzet |
 | --- | --- |
 | `zonnige_dag` | 12:00, geen bewolking, batterij op 30 procent, alles uit |
+| `piek_met_regelaar` | Dezelfde avondpiek, maar met piekscheren op 3 kW |
 | `bewolkte_dag` | 12:00, 85 procent bewolking, batterij op 50 procent |
 | `piekbelasting_avond` | 19:00, laadpaal op 11 kW, wasmachine en boiler aan, batterij op 70 procent |
 | `lege_batterij` | 09:00, 20 procent bewolking, batterij op 5 procent, ondergrens op 0 |
@@ -423,66 +498,82 @@ Beide services werken op alle installaties die op deze Pi draaien.
 
 ---
 
-## Drie oefeningen voor cursisten
+## Vier oefeningen voor cursisten
 
-### Oefening 1: laad de auto zonder het net te belasten
+De eerste twee horen bij elkaar en zijn de kern van het practicum: doe het
+eerst zelf, laat het daarna door het systeem doen, en vergelijk de uitkomst.
 
-**Klaarzetten:** docent draait `zonnige_dag`.
+### Oefening 1: houd de avondpiek onder 3 kW, met de hand
 
-De auto moet geladen worden, maar de netafname moet zo klein mogelijk blijven.
+**Klaarzetten:** docent draait `piekbelasting_avond` en daarna `reset` met
+**Alleen de tellers** aan, zodat `sensor.virtueel_ems_hoogste_piek` op nul staat.
 
-1. Kijk eerst wat de panelen leveren en wat het huis vraagt.
-2. Zet de laadpaal aan en schuif het laadvermogen omhoog tot
-   `sensor.virtueel_ems_net_vermogen` net niet positief wordt.
-3. Laat daarna de batterij meehelpen: zet
-   `number.virtueel_ems_batterij_vermogen` negatief, dus op ontladen.
-4. Hoeveel kun je nu laden voordat het net eraan te pas komt?
-5. Schuif de bewolking langzaam omhoog en houd de netafname op nul. Wat moet je
-   bijstellen, en wanneer lukt het niet meer?
+Het is avond, de auto laadt op 11 kW en er staan twee zware apparaten aan.
+Opdracht: houd de afname van het net onder 3 kW. De regelmodus staat op
+**Handmatig**, dus alles wat er gebeurt komt van jou.
 
-**Wat je hier ziet:** de zon, de batterij en de auto zijn drie knoppen op één
-balans. Het net is het restant, niet iets wat je zelf instelt.
+1. Kijk eerst wat er zonder ingrijpen door de aansluiting gaat.
+2. Schuif `number.virtueel_ems_batterij_vermogen` naar ontladen, zo ver als
+   nodig, en houd het net in de gaten.
+3. De laadpaal en de apparaten trekken niet altijd evenveel. Blijf bijsturen.
+4. Laat dit vijf gesimuleerde minuten lopen en noteer daarna de **hoogste piek**.
 
-### Oefening 2: houd de batterij boven 20 procent
+Het lukt niet om precies op 3 kW te blijven, en dat is de bedoeling. Schrijf op
+waarom niet.
 
-**Klaarzetten:** docent draait `piekbelasting_avond`.
+### Oefening 2: laat de regelaar het doen
 
-Het is avond, de auto laadt op 11 kW en er staan twee zware apparaten aan. De
-batterij mag niet onder 20 procent komen.
+**Klaarzetten:** docent draait `piek_met_regelaar` en daarna `reset` met
+**Alleen de tellers** aan.
 
-1. Zet `number.virtueel_ems_batterij_min_soc` op 20.
-2. Zet de batterij vol op ontladen en kijk naar
-   `sensor.virtueel_ems_batterij_vermogen_actueel`.
-3. Volg de laadtoestand. Wat gebeurt er met het werkelijke vermogen zodra de
-   batterij de 20 procent nadert, en wat doet de netafname op dat moment?
-4. Zorg dat de wasmachine en de auto toch allebei klaarkomen. Welke van de twee
-   zet je tijdelijk uit, en waarom die?
+Precies dezelfde situatie, maar nu staat de regelmodus op **Piekscheren** met de
+grens op 3 kW.
 
-**Wat je hier ziet:** een grens in een EMS is geen noodstop maar een
-begrenzing. Het systeem knijpt het vermogen geleidelijk af, en dat gat valt
-onmiddellijk op de netaansluiting.
+1. Doe niets. Kijk vijf gesimuleerde minuten toe.
+2. Lees bovenaan het scherm wat de regelaar doet en waarom.
+3. Vergelijk de hoogste piek met die van oefening 1.
+4. Zet de piekgrens op 1,5 kW. Wat zegt de regelaar nu, en waarom lukt het niet
+   meer?
 
-### Oefening 3: haal de dag door op eigen opslag
+**Wat je hier ziet:** een EMS doet niets wat jij niet ook kunt. Het doet het
+alleen elke vijf seconden opnieuw, precies genoeg, en het houdt vol.
 
-**Klaarzetten:** docent draait `lege_batterij` en daarna `virtual_ems.reset`
-met **Alleen de tellers** aan, zodat de tellers op nul staan.
+### Oefening 3: waar houdt het systeem op
 
-Het is ochtend en de batterij is zo goed als leeg. Doel: aan het eind van de
-gesimuleerde dag zo min mogelijk op `sensor.virtueel_ems_net_afname`.
+**Klaarzetten:** de docent zet de aansluiting in de opties op **1 fase van
+25 A** en draait daarna `piekbelasting_avond`.
 
-1. Laad de batterij overdag met de overtollige zon. Let op: laden kost meer dan
-   je er later uit haalt, want het rendement is 90 procent over een hele cyclus.
-2. Zet de boiler op het moment dat de panelen het meeste leveren, niet in de
-   avond.
-3. Laat de batterij in de avondpiek ontladen.
-4. Vergelijk aan het eind `net_afname` met `net_teruglevering` en met
-   `pv_opbrengst`. Hoeveel van je eigen zon heb je zelf gebruikt?
+1. Zet alle apparaten aan en de laadpaal op 11 kW. Kijk naar
+   **Belastbaarheid**: die gaat ver boven de 100 procent willen.
+2. Met de aansluitbewaking aan: welke dingen regelt het systeem terug, en in
+   welke volgorde? Lees de redenen mee.
+3. Zet `switch.virtueel_ems_aansluitbewaking` uit. Kijk naar de warmte van de
+   hoofdzekering en naar de tijd die de kaart erbij zet.
+4. Wacht tot hij doorsmelt. Wat gebeurt er met de zonnepanelen, de batterij en
+   de tellers?
+5. De docent plaatst een nieuwe zekering. Zet de bewaking weer aan en probeer
+   hetzelfde nog een keer.
 
-**Wat je hier ziet:** verschuiven in de tijd is waar een EMS voor bestaat. En
-opslaan kost energie, dus rechtstreeks gebruiken is altijd beter dan de omweg
-via de batterij.
+**Wat je hier ziet:** beveiliging is geen regelaar. Een EMS voorkomt dat het
+misgaat; de zekering ruimt op als het toch misgaat, en dat kost tijd en een
+nieuwe zekering.
 
----
+### Oefening 4: hoeveel van je eigen zon gebruik je zelf
+
+**Klaarzetten:** docent draait `zonnige_dag` en daarna `reset` met
+**Alleen de tellers** aan.
+
+1. Noteer `sensor.virtueel_ems_zelfbenutting` na tien gesimuleerde minuten in
+   **Handmatig**, zonder iets te doen.
+2. Zet de regelmodus op **Zelfconsumptie** en laat het opnieuw tien minuten
+   lopen.
+3. Vergelijk de zelfbenutting, de teruglevering en de netafname.
+4. Zet nu de boiler aan op het moment dat de zon het meeste levert. Wat doet dat
+   met de zelfbenutting, en waarom is dat beter dan hem in de avond aanzetten?
+
+**Wat je hier ziet:** opslaan kost energie, want het rendement is 90 procent over
+een hele cyclus. Rechtstreeks gebruiken is altijd beter dan de omweg via de
+batterij, en verschuiven in de tijd is waar een EMS voor bestaat.
 
 ## Hoe de simulatie rekent
 

@@ -16,6 +16,7 @@ from .const import (
     ATTR_SCENARIO,
     DOMAIN,
     PLATFORMS,
+    SERVICE_HERSTEL_ZEKERING,
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
 )
@@ -60,8 +61,16 @@ def _register_services(hass: HomeAssistant) -> None:
         hass.services.async_register(
             DOMAIN, SERVICE_SET_SCENARIO, handle_set_scenario, schema=SET_SCENARIO_SCHEMA
         )
+    async def handle_herstel_zekering(call: ServiceCall) -> None:
+        for coordinator in _loaded_coordinators(hass):
+            await coordinator.async_herstel_zekering()
+
     if not hass.services.has_service(DOMAIN, SERVICE_RESET):
         hass.services.async_register(DOMAIN, SERVICE_RESET, handle_reset, schema=RESET_SCHEMA)
+    if not hass.services.has_service(DOMAIN, SERVICE_HERSTEL_ZEKERING):
+        hass.services.async_register(
+            DOMAIN, SERVICE_HERSTEL_ZEKERING, handle_herstel_zekering, schema=vol.Schema({})
+        )
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -110,6 +119,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]:
             hass.services.async_remove(DOMAIN, SERVICE_SET_SCENARIO)
             hass.services.async_remove(DOMAIN, SERVICE_RESET)
+            hass.services.async_remove(DOMAIN, SERVICE_HERSTEL_ZEKERING)
     return unloaded
 
 

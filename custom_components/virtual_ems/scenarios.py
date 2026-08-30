@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from .regelaar import MODUS_HANDMATIG, MODUS_PIEKSCHEREN
 from .simulation import Setpoints, Simulation
 
 
@@ -33,6 +34,12 @@ class Scenario:
     start_hour: float | None = None
     #: Tijdversnelling die bij dit scenario hoort.
     time_factor: float = 1.0
+    #: Waar de regelaar op stuurt in deze lessituatie.
+    modus: str = MODUS_HANDMATIG
+    #: Het vangnet dat de installatie binnen de aansluiting houdt.
+    bewaking: bool = True
+    #: De grens waar piekscheren op stuurt, in W.
+    piekgrens_w: float = 3000.0
 
 
 SCENARIOS: dict[str, Scenario] = {
@@ -67,6 +74,21 @@ SCENARIOS: dict[str, Scenario] = {
         start_hour=19.0,
         time_factor=10.0,
     ),
+    # Dezelfde avondpiek, nu met de regelaar aan het stuur. Draai deze twee
+    # achter elkaar en de klas ziet in één keer waar een EMS voor is.
+    "piek_met_regelaar": Scenario(
+        key="piek_met_regelaar",
+        cloud_pct=0.0,
+        soc_pct=70.0,
+        battery_setpoint_w=0.0,
+        ev_enabled=True,
+        ev_setpoint_w=11000.0,
+        appliances_on=("wasmachine", "boiler"),
+        start_hour=19.0,
+        time_factor=10.0,
+        modus=MODUS_PIEKSCHEREN,
+        piekgrens_w=3000.0,
+    ),
     # Lege batterij aan het begin van de dag: eerst laden, dan pas luxe.
     "lege_batterij": Scenario(
         key="lege_batterij",
@@ -95,6 +117,9 @@ def apply_scenario(simulation: Simulation, scenario: Scenario) -> None:
         ev_enabled=scenario.ev_enabled,
         ev_setpoint_w=scenario.ev_setpoint_w,
         time_factor=scenario.time_factor,
+        modus=scenario.modus,
+        bewaking=scenario.bewaking,
+        peak_limit_w=scenario.piekgrens_w,
         appliances={
             name: name in scenario.appliances_on for name, _power in simulation.config.appliances
         },

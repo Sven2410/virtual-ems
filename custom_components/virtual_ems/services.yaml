@@ -16,6 +16,7 @@ set_scenario:
             - zonnige_dag
             - bewolkte_dag
             - piekbelasting_avond
+            - piek_met_regelaar
             - lege_batterij
 
 reset:
@@ -34,3 +35,10 @@ reset:
       default: false
       selector:
         boolean:
+
+zekering_herstellen:
+  name: Zekering vervangen
+  description: >-
+    Zet een nieuwe hoofdzekering in de gesimuleerde installatie, zodat er weer
+    spanning op staat. Dit is werk voor de docent: de klas ziet dan dat een
+    doorgesmolten zekering niet vanzelf terugkomt.

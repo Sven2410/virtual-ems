@@ -66,6 +66,25 @@ const VORMEN = {
 
   terug: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20.2 3.8v4.8h-4.8"/>',
 
+  schuif:
+    '<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h9M17 17h3"/>' +
+    '<circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="15" cy="17" r="2"/>',
+
+  robot:
+    '<rect x="4.5" y="7.5" width="15" height="11" rx="3"/>' +
+    '<path d="M12 4v3.5"/><circle cx="12" cy="3.2" r="1.2"/>' +
+    '<circle cx="9.2" cy="12.4" r="1.3" fill="currentColor" stroke="none"/>' +
+    '<circle cx="14.8" cy="12.4" r="1.3" fill="currentColor" stroke="none"/>' +
+    '<path d="M9.6 15.8h4.8"/>',
+
+  zekering:
+    '<rect x="6.5" y="9" width="11" height="6" rx="1.6"/>' +
+    '<path d="M3.5 12h3M17.5 12h3"/><path d="M8.6 12h6.8"/>',
+
+  schild:
+    '<path d="M12 3.2l7 2.6v5.4c0 4.2-2.9 7.6-7 9.6-4.1-2-7-5.4-7-9.6V5.8z"/>' +
+    '<path d="M9 12.2l2.2 2.2 4-4.2"/>',
+
   ster: '<path d="M12 3.6l2.5 5.3 5.7.8-4.1 4.1 1 5.8-5.1-2.8-5.1 2.8 1-5.8-4.1-4.1 5.7-.8z"/>',
 };
 

@@ -11,6 +11,7 @@
 import { BalkKaart, KopKaart, KpiKaart } from "./kaarten.js";
 import { BedieningKaart, MeterKaart, ScenarioKaart } from "./bediening.js";
 import { PaginaKaart } from "./pagina.js";
+import { RegelaarKaart } from "./regelaarkaart.js";
 import { VirtualEmsStrategie } from "./strategie.js";
 
 const ELEMENTEN = [
@@ -18,6 +19,7 @@ const ELEMENTEN = [
   ["virtual-ems-kop", KopKaart, "Virtueel EMS kop", "Wat er nu gebeurt, in één zin"],
   ["virtual-ems-kpis", KpiKaart, "Virtueel EMS kentallen", "De rij met opwek, verbruik en net"],
   ["virtual-ems-balken", BalkKaart, "Virtueel EMS balken", "Waar het vermogen heen gaat"],
+  ["virtual-ems-regelaar", RegelaarKaart, "Virtueel EMS regelaar", "Waar het systeem op stuurt"],
   ["virtual-ems-bediening", BedieningKaart, "Virtueel EMS bediening", "De schuiven en schakelaars"],
   ["virtual-ems-meter", MeterKaart, "Virtueel EMS meterstanden", "De cumulatieve tellers"],
   ["virtual-ems-scenarios", ScenarioKaart, "Virtueel EMS scenario's", "Knoppen voor de docent"],

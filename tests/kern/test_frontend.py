@@ -8,7 +8,9 @@ schermafdruk niet ziet.
 
 from __future__ import annotations
 
+import json
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -63,6 +65,7 @@ def test_elke_kaart_meldt_zich_aan_bij_de_kaartkiezer():
         "virtual-ems-kop",
         "virtual-ems-kpis",
         "virtual-ems-balken",
+        "virtual-ems-regelaar",
         "virtual-ems-bediening",
         "virtual-ems-meter",
         "virtual-ems-scenarios",
@@ -117,7 +120,7 @@ def test_er_wordt_niets_van_buiten_gehaald():
 
 def test_geen_tekst_wordt_met_hoofdletters_geforceerd_behalve_een_eyebrow():
     """Tekst verschijnt zoals hij is ingetypt; op een klein label mag het."""
-    toegestaan = {".eyebrow", ".rol", ".label", ".pil", ".stand"}
+    toegestaan = {".eyebrow", ".rol", ".label", ".pil", ".stand", ".zekeringstand"}
     for bestand in bewaak_frontend.js_bestanden():
         regels = bestand.read_text(encoding="utf-8").splitlines()
         for nummer, regel in enumerate(regels, start=1):
@@ -173,3 +176,53 @@ def test_de_url_draagt_de_versie():
 @pytest.mark.parametrize("bestandsnaam", ["virtual-ems.js", "registratie.js", "stijl.js"])
 def test_de_bundel_bestaat_echt_op_de_plek_die_de_url_belooft(bestandsnaam: str):
     assert (FRONTEND / bestandsnaam).is_file()
+
+
+# --- De bundel draaien in Node ------------------------------------------------
+
+
+def _kopieer_als_modules(doel: Path) -> Path:
+    """Zet de bundel als .mjs neer, zodat Node hem als module laadt.
+
+    De bestanden heten .js omdat Home Assistant ze zo serveert. Node kijkt naar
+    de extensie of naar een package.json, en dat laatste hoort niet in de
+    integratie thuis. Kopieren is dan de eenvoudigste weg.
+    """
+    doel.mkdir(parents=True, exist_ok=True)
+    for bestand in bewaak_frontend.js_bestanden():
+        inhoud = bestand.read_text(encoding="utf-8").replace('.js"', '.mjs"')
+        (doel / (bestand.stem + ".mjs")).write_text(inhoud, encoding="utf-8")
+    return doel
+
+
+def test_de_bundel_laadt_en_de_strategie_bouwt_de_goede_configuratie(tmp_path: Path):
+    """Geen nagebouwde browser: alleen pure logica.
+
+    Wat hier getoetst wordt is of de modules elkaar vinden, of alle elementen
+    zich registreren, of de strategie de juiste weergaven bouwt en of de
+    getallen Nederlands opgemaakt worden. Over de CSS-cascade en over of een
+    knop een klik aanneemt zegt dit niets; daar is een echte browser voor, en
+    die metingen staan in de rapporten.
+    """
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node staat niet op deze machine")
+
+    modules = _kopieer_als_modules(tmp_path / "bundel")
+    klaar = subprocess.run(
+        [node, str(REPO / "dev" / "knoopproef.mjs"), str(modules)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert klaar.returncode == 0, klaar.stderr or klaar.stdout
+    uitslag = json.loads(klaar.stdout.strip().splitlines()[-1])
+    assert uitslag["elementen"] == len(
+        [
+            regel
+            for regel in (FRONTEND / "registratie.js").read_text(encoding="utf-8").splitlines()
+            if regel.strip().startswith('["virtual-ems-')
+        ]
+    ) + 1  # de kaarten plus de strategie
+    assert uitslag["kaartkiezer"] == uitslag["elementen"] - 1
+    assert uitslag["weergaven"] == 2
