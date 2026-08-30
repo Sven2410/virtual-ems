@@ -334,6 +334,10 @@ $ git status --porcelain
 (leeg)
 ```
 
-Twee commits op `ronde-1-virtueel-ems`: de integratie zelf, en de reparatie van
-de twee dingen die CI vond. Samengevoegd in `main` via PR #1 met een
-samenvoegcommit, en getagd als `v1.0.0`.
+De tak `ronde-1-virtueel-ems` telde twee commits, de integratie zelf en de
+reparatie van wat CI vond, en is via PR #1 als één commit samengevoegd in
+`main`. Alle vier de CI-banen waren daarna groen op `main`, ook de
+HACS-controle: die leest de licentie via de GitHub-API van de hoofdtak en kon
+dus pas na het samenvoegen slagen. PR #2 werkte deze alinea bij en zette
+`actions/checkout` en `actions/setup-python` een versie hoger, want die draaiden
+op een afgeschreven Node. Daarna is `v1.0.0` gezet.
