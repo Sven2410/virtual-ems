@@ -1,0 +1,108 @@
+# DomotiTech-thema voor Home Assistant.
+#
+# Zet dit bestand in <config>/themes/domotitech.yaml, voeg in configuration.yaml
+#
+#   frontend:
+#     themes: !include_dir_merge_named themes
+#
+# toe, herstart Home Assistant en kies het thema bij Profiel -> Thema. Wil je
+# dat elk kioskscherm het thema krijgt zonder dat een cursist iets kiest, zet
+# het dan per dashboard vast via Instellingen -> Dashboards -> ... -> Thema.
+#
+# De waarden hieronder zijn letterlijk de tokens uit theme.js van DomotiApp.
+# Ze zijn niet "ongeveer" na te maken: de zes stroomkleuren zijn gezocht op
+# OKLCH-scheiding en kleurenblindheidsafstand tegen #12120f. Vervang ze niet.
+
+DomotiTech:
+  # --- Basis ----------------------------------------------------------------
+  primary-color: "#026fa1"
+  dark-primary-color: "#026fa1"
+  light-primary-color: "#198fd9"
+  accent-color: "#198fd9"
+
+  primary-background-color: "#0c0c0a"
+  secondary-background-color: "#12120f"
+  divider-color: "rgba(232, 228, 222, 0.10)"
+
+  primary-text-color: "#e8e4de"
+  secondary-text-color: "rgba(232, 228, 222, 0.62)"
+  text-primary-color: "#e8e4de"
+  disabled-text-color: "rgba(232, 228, 222, 0.38)"
+
+  # Geen webfonts: het systeemfont, zodat er niets geladen hoeft te worden.
+  primary-font-family: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+  paper-font-common-base_-_font-family: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+  paper-font-body1_-_font-family: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+  mdc-typography-font-family: "system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+
+  # --- Kaarten --------------------------------------------------------------
+  card-background-color: "#12120f"
+  ha-card-background: "rgba(255, 255, 255, 0.038)"
+  ha-card-border-radius: "20px"
+  ha-card-border-width: "1px"
+  ha-card-border-color: "rgba(232, 228, 222, 0.10)"
+  # Een slagschaduw onder een laag element is een vlek. Kaarten liggen laag en
+  # krijgen daarom alleen de haarlijn; menu's en dialogen houden hun eigen
+  # schaduw, want daar is hij de enige aanwijzing dat er iets boven iets hangt.
+  ha-card-box-shadow: "none"
+
+  # --- Kop- en zijbalk ------------------------------------------------------
+  app-header-background-color: "#12120f"
+  app-header-text-color: "#e8e4de"
+  app-header-edit-background-color: "#12120f"
+  sidebar-background-color: "#12120f"
+  sidebar-text-color: "rgba(232, 228, 222, 0.62)"
+  sidebar-icon-color: "rgba(232, 228, 222, 0.38)"
+  sidebar-selected-text-color: "#e8e4de"
+  sidebar-selected-icon-color: "#198fd9"
+
+  # --- Bedieningselementen --------------------------------------------------
+  state-icon-color: "#e8e4de"
+  state-icon-active-color: "#198fd9"
+  paper-slider-knob-color: "#198fd9"
+  paper-slider-active-color: "#026fa1"
+  slider-color: "#026fa1"
+  slider-bar-color: "rgba(255, 255, 255, 0.070)"
+  switch-checked-color: "#026fa1"
+  switch-unchecked-button-color: "rgba(232, 228, 222, 0.62)"
+  switch-unchecked-track-color: "rgba(255, 255, 255, 0.070)"
+
+  # --- Status. Gereserveerde betekenis, altijd met een icoon en een woord ----
+  success-color: "#0ca30c"
+  warning-color: "#fab219"
+  error-color: "#d03b3b"
+  label-badge-green: "#0ca30c"
+  label-badge-yellow: "#fab219"
+  label-badge-red: "#d03b3b"
+  state-active-color: "#198fd9"
+  state-inactive-color: "rgba(232, 228, 222, 0.38)"
+
+  # --- Energiestromen -------------------------------------------------------
+  # Deze zes kleuren zijn de identiteit van een stroom, geen oordeel. Rood en
+  # groen komen er daarom niet in voor: die zijn voor status.
+  energy-solar-color: "#dc7300"
+  energy-non-fossil-color: "#dc7300"
+  energy-grid-consumption-color: "#129be4"
+  energy-grid-return-color: "#bc10c8"
+  # Laden krijgt device-2, ontladen device-1: in het energiedashboard staan die
+  # twee balken naast elkaar en moeten ze uit elkaar te houden zijn.
+  energy-battery-in-color: "#039580"
+  energy-battery-out-color: "#fd0774"
+
+  # De tegels op de dashboards verwijzen naar deze benoemde kleuren, zodat de
+  # zes stroomkleuren ook daar exact kloppen.
+  rgb-orange-color: "220, 115, 0"     # --solar
+  rgb-blue-color: "35, 94, 250"       # --house
+  rgb-cyan-color: "18, 155, 228"      # --grid-in
+  rgb-purple-color: "188, 16, 200"    # --grid-out
+  rgb-pink-color: "253, 7, 116"       # --device-1
+  rgb-teal-color: "3, 149, 128"       # --device-2
+  rgb-green-color: "12, 163, 12"      # --good
+  rgb-yellow-color: "250, 178, 25"    # --warn
+  rgb-red-color: "208, 59, 59"        # --bad
+
+  rgb-primary-color: "2, 111, 161"
+  rgb-accent-color: "25, 143, 217"
+  rgb-primary-text-color: "232, 228, 222"
+  rgb-secondary-text-color: "232, 228, 222"
+  rgb-card-background-color: "18, 18, 15"

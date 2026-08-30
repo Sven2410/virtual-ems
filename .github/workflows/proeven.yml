@@ -1,0 +1,51 @@
+name: Proeven
+
+# De bewakers hangen hier aan de bouwstap, niet aan of iemand eraan denkt ze te
+# draaien: elke duw en elk verzoek tot samenvoegen draait de hele set.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  kern:
+    name: Kernproeven (zonder Home Assistant)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip pytest PyYAML
+      - name: Rekenkern, scenario's, dashboards en verpakking
+        run: python -m pytest tests/kern -v
+
+  homeassistant:
+    name: Proeven met Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: python -m pip install --upgrade pip -r requirements-test.txt
+      - name: Alle proeven
+        run: python -m pytest -v
+
+  hassfest:
+    name: Manifest volgens de regels van Home Assistant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: home-assistant/actions/hassfest@master
+
+  hacs:
+    name: Klaar voor HACS
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: integration
+          ignore: brands

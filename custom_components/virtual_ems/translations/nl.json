@@ -1,0 +1,117 @@
+{
+  "title": "Virtueel EMS",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Virtueel EMS installeren",
+        "description": "Geef aan hoe groot de installatie is die je in de les wilt simuleren. Alles is later nog aan te passen via Opties.",
+        "data": {
+          "naam": "Naam van de installatie",
+          "pv_piek_kwp": "Piekvermogen zonnepanelen",
+          "batterij_kwh": "Capaciteit thuisbatterij",
+          "laadpaal_max_kw": "Maximaal laadvermogen laadpaal"
+        },
+        "data_description": {
+          "naam": "Deze naam komt terug in elke entiteit, bijvoorbeeld sensor.lokaal_a_pv_vermogen.",
+          "pv_piek_kwp": "Het vermogen dat de panelen bij standaardtestcondities leveren.",
+          "batterij_kwh": "De bruikbare opslagcapaciteit van de thuisbatterij.",
+          "laadpaal_max_kw": "11 kW komt overeen met een gangbare driefasige laadpaal."
+        }
+      }
+    },
+    "error": {
+      "ongeldige_naam": "Vul een naam in die letters of cijfers bevat."
+    },
+    "abort": {
+      "already_configured": "Er bestaat al een installatie met deze naam."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Virtueel EMS aanpassen",
+        "description": "Pas de installatie aan zonder opnieuw te installeren. De integratie herlaadt zichzelf zodra je opslaat.",
+        "data": {
+          "pv_piek_kwp": "Piekvermogen zonnepanelen",
+          "batterij_kwh": "Capaciteit thuisbatterij",
+          "laadpaal_max_kw": "Maximaal laadvermogen laadpaal",
+          "jaarverbruik_kwh": "Jaarverbruik huishouden",
+          "dagstart_uur": "Vaste starttijd van de simulatiedag"
+        },
+        "data_description": {
+          "jaarverbruik_kwh": "Bepaalt de schaal van de basislast. Vul hier het werkelijke jaarverbruik van de voorbeeldwoning in; de standaardwaarde is slechts een ordegrootte.",
+          "dagstart_uur": "Laat leeg om de echte klok te volgen. Vul bijvoorbeeld 11 in om elke les om 11:00 in de ochtend te beginnen, ook bij een avondles."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "pv_vermogen": { "name": "PV vermogen" },
+      "pv_opbrengst": { "name": "PV opbrengst" },
+      "batterij_soc": { "name": "Batterij SoC" },
+      "batterij_vermogen_actueel": { "name": "Batterij vermogen actueel" },
+      "batterij_inhoud": { "name": "Batterij inhoud" },
+      "batterij_geladen": { "name": "Batterij geladen" },
+      "batterij_ontladen": { "name": "Batterij ontladen" },
+      "laadpaal_vermogen": { "name": "Laadpaal vermogen" },
+      "laadpaal_verbruik": { "name": "Laadpaal verbruik" },
+      "huishoudelijk_verbruik": { "name": "Huishoudelijk verbruik" },
+      "verbruik_totaal": { "name": "Verbruik totaal" },
+      "net_vermogen": { "name": "Net vermogen" },
+      "net_afname": { "name": "Net afname" },
+      "net_teruglevering": { "name": "Net teruglevering" },
+      "zonnehoogte": { "name": "Zonnehoogte" },
+      "simulatietijd": { "name": "Simulatietijd" },
+      "wasmachine_verbruik": { "name": "Wasmachine verbruik" },
+      "boiler_verbruik": { "name": "Boiler verbruik" },
+      "airco_verbruik": { "name": "Airco verbruik" }
+    },
+    "number": {
+      "pv_bewolking": { "name": "PV bewolking" },
+      "batterij_vermogen": { "name": "Batterij vermogen" },
+      "batterij_min_soc": { "name": "Batterij min SoC" },
+      "batterij_max_soc": { "name": "Batterij max SoC" },
+      "laadpaal_vermogen": { "name": "Laadpaal vermogen" },
+      "tijdversnelling": { "name": "Tijdversnelling" }
+    },
+    "switch": {
+      "laadpaal_actief": { "name": "Laadpaal actief" },
+      "wasmachine": { "name": "Wasmachine" },
+      "boiler": { "name": "Boiler" },
+      "airco": { "name": "Airco" }
+    }
+  },
+  "selector": {
+    "scenario": {
+      "options": {
+        "zonnige_dag": "Zonnige dag rond het middaguur",
+        "bewolkte_dag": "Zwaar bewolkte dag",
+        "piekbelasting_avond": "Piekbelasting in de avond",
+        "lege_batterij": "Lege batterij in de ochtend"
+      }
+    }
+  },
+  "services": {
+    "set_scenario": {
+      "name": "Scenario instellen",
+      "description": "Zet in één handeling een complete lessituatie klaar: bewolking, batterijstand, laadpaal, apparaten en het tijdstip van de gesimuleerde dag.",
+      "fields": {
+        "scenario": {
+          "name": "Scenario",
+          "description": "De lessituatie die je wilt klaarzetten."
+        }
+      }
+    },
+    "reset": {
+      "name": "Terugzetten",
+      "description": "Zet alle cumulatieve kWh-tellers op nul en de batterij terug op 50 procent, zodat een nieuwe lesgroep met een schone lei begint.",
+      "fields": {
+        "alleen_tellers": {
+          "name": "Alleen de tellers",
+          "description": "Aan: alleen de kWh-tellers en de batterijstand gaan terug. Uit: ook de schuiven en schakelaars gaan terug naar de beginstand."
+        }
+      }
+    }
+  }
+}

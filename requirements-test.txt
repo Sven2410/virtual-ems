@@ -1,0 +1,3 @@
+# Volledige proefomgeving (Linux of macOS; Home Assistant draait niet op Windows).
+pytest-homeassistant-custom-component
+PyYAML

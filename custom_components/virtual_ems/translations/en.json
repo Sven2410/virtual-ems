@@ -1,0 +1,117 @@
+{
+  "title": "Virtual EMS",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Virtual EMS",
+        "description": "Describe the size of the installation you want to simulate. Everything can be changed later through Options.",
+        "data": {
+          "naam": "Installation name",
+          "pv_piek_kwp": "Solar peak power",
+          "batterij_kwh": "Home battery capacity",
+          "laadpaal_max_kw": "Maximum charger power"
+        },
+        "data_description": {
+          "naam": "This name is part of every entity id, for example sensor.lokaal_a_pv_vermogen.",
+          "pv_piek_kwp": "The power the array delivers at standard test conditions.",
+          "batterij_kwh": "Usable storage capacity of the home battery.",
+          "laadpaal_max_kw": "11 kW matches a common three phase wall box."
+        }
+      }
+    },
+    "error": {
+      "ongeldige_naam": "Enter a name that contains letters or digits."
+    },
+    "abort": {
+      "already_configured": "An installation with this name already exists."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Adjust Virtual EMS",
+        "description": "Change the installation without reinstalling. The integration reloads itself when you save.",
+        "data": {
+          "pv_piek_kwp": "Solar peak power",
+          "batterij_kwh": "Home battery capacity",
+          "laadpaal_max_kw": "Maximum charger power",
+          "jaarverbruik_kwh": "Annual household consumption",
+          "dagstart_uur": "Fixed start hour of the simulated day"
+        },
+        "data_description": {
+          "jaarverbruik_kwh": "Scales the base load. Enter the real annual consumption of the example house; the default is an order of magnitude only.",
+          "dagstart_uur": "Leave empty to follow the real clock. Enter 11 to start every lesson at 11:00, even during an evening class."
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "pv_vermogen": { "name": "PV power" },
+      "pv_opbrengst": { "name": "PV yield" },
+      "batterij_soc": { "name": "Battery SoC" },
+      "batterij_vermogen_actueel": { "name": "Battery power actual" },
+      "batterij_inhoud": { "name": "Battery content" },
+      "batterij_geladen": { "name": "Battery charged" },
+      "batterij_ontladen": { "name": "Battery discharged" },
+      "laadpaal_vermogen": { "name": "Charger power" },
+      "laadpaal_verbruik": { "name": "Charger energy" },
+      "huishoudelijk_verbruik": { "name": "Household consumption" },
+      "verbruik_totaal": { "name": "Consumption total" },
+      "net_vermogen": { "name": "Grid power" },
+      "net_afname": { "name": "Grid import" },
+      "net_teruglevering": { "name": "Grid export" },
+      "zonnehoogte": { "name": "Solar elevation" },
+      "simulatietijd": { "name": "Simulation time" },
+      "wasmachine_verbruik": { "name": "Washing machine energy" },
+      "boiler_verbruik": { "name": "Water heater energy" },
+      "airco_verbruik": { "name": "Air conditioner energy" }
+    },
+    "number": {
+      "pv_bewolking": { "name": "PV cloud cover" },
+      "batterij_vermogen": { "name": "Battery power" },
+      "batterij_min_soc": { "name": "Battery min SoC" },
+      "batterij_max_soc": { "name": "Battery max SoC" },
+      "laadpaal_vermogen": { "name": "Charger power" },
+      "tijdversnelling": { "name": "Time acceleration" }
+    },
+    "switch": {
+      "laadpaal_actief": { "name": "Charger active" },
+      "wasmachine": { "name": "Washing machine" },
+      "boiler": { "name": "Water heater" },
+      "airco": { "name": "Air conditioner" }
+    }
+  },
+  "selector": {
+    "scenario": {
+      "options": {
+        "zonnige_dag": "Sunny day around noon",
+        "bewolkte_dag": "Heavily clouded day",
+        "piekbelasting_avond": "Evening peak load",
+        "lege_batterij": "Empty battery in the morning"
+      }
+    }
+  },
+  "services": {
+    "set_scenario": {
+      "name": "Set scenario",
+      "description": "Sets up a complete lesson situation in one go: cloud cover, battery level, charger, appliances and the time of the simulated day.",
+      "fields": {
+        "scenario": {
+          "name": "Scenario",
+          "description": "The lesson situation you want to prepare."
+        }
+      }
+    },
+    "reset": {
+      "name": "Reset",
+      "description": "Sets all cumulative kWh counters to zero and the battery back to 50 percent, so a new class starts clean.",
+      "fields": {
+        "alleen_tellers": {
+          "name": "Counters only",
+          "description": "On: only the counters and the battery level are reset. Off: the controls return to their starting position as well."
+        }
+      }
+    }
+  }
+}
