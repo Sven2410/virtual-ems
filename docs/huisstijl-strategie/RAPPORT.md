@@ -292,6 +292,28 @@ Alle 16 mutaties werden gevangen.
 
 ---
 
+## 3b. En wat CI erbij vond
+
+hassfest, de controle van Home Assistant zelf, viel over het manifest, twee keer
+achter elkaar:
+
+1. **"Using component http but it's not in dependencies or after_dependencies".**
+   De integratie serveert zijn eigen bundel via `homeassistant.components.http`
+   en meldt hem aan via `homeassistant.components.frontend`, en dat hoort in het
+   manifest te staan. De eerste reparatie zette ze als harde afhankelijkheid, en
+   dat brak alle proeven met Home Assistant: het pakket `hass_frontend` staat
+   niet in een proefomgeving, dus `frontend` kan daar niet opgezet worden en de
+   integratie kwam niet meer van de grond. Het werd `after_dependencies`, en dat
+   klopt ook beter: zonder http of frontend draaien de entiteiten en de services
+   gewoon door, er is dan alleen geen eigen bundel.
+2. **"Manifest keys are not sorted correctly".** Domain, name, en daarna
+   alfabetisch.
+
+Bij allebei staat nu een proef in `tests/kern/test_repo.py`, zodat het niet nog
+een keer pas in CI opvalt.
+
+---
+
 ## 4. Samenvatting
 
 De docent zet voortaan drie regels in een leeg dashboard en heeft een compleet
@@ -303,8 +325,9 @@ echte browser aangeklikt en opgemeten: `isTrusted` op elke klik, de kleuren tot
 op de token, geen zijwaartse overloop op 280, 320 en 390 px, en de juiste service
 aan de andere kant. Twee fouten kwamen uit die metingen: een schuif die drie keer
 te veel verstuurde, en een weergavetitel die de naam van de entiteit meenam.
-Beide zijn gerepareerd en opnieuw gemeten. 130 proeven groen, en zestien mutaties
-tonen dat die proeven iets bewaken.
+Beide zijn gerepareerd en opnieuw gemeten. 132 proeven groen, ook op Linux in CI met
+een echte Home Assistant, en zestien mutaties tonen dat die proeven iets
+bewaken.
 
 ## 5. Wat niet lukte
 
@@ -357,5 +380,6 @@ $ git status --porcelain
 (leeg)
 ```
 
-Eén commit op `ronde-2-huisstijl-strategie`, via een PR samengevoegd in `main`,
+De tak `ronde-2-huisstijl-strategie` telde vier commits: de strategie zelf en
+drie reparaties van wat CI vond. Via PR #3 als één commit samengevoegd in `main`
 en getagd als `v1.1.0`.
