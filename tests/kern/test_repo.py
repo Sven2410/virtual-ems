@@ -56,7 +56,10 @@ def test_het_manifest_noemt_wat_de_integratie_gebruikt():
     frontend. Staat dat er niet, dan valt hassfest erover, en op een echte
     installatie kan de bundel dan te vroeg aangemeld worden."""
     manifest = lees_json(COMPONENT / "manifest.json")
-    assert set(manifest["dependencies"]) >= {"frontend", "http"}
+    # Bewust after_dependencies: zonder http of frontend draaien de entiteiten
+    # en de services gewoon door, er is dan alleen geen eigen bundel.
+    assert set(manifest["after_dependencies"]) >= {"frontend", "http"}
+    assert "dependencies" not in manifest
 
 
 def test_hacs_bestand_is_geldig():

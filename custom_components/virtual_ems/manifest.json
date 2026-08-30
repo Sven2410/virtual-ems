@@ -5,7 +5,7 @@
     "@Sven2410"
   ],
   "config_flow": true,
-  "dependencies": [
+  "after_dependencies": [
     "frontend",
     "http"
   ],
