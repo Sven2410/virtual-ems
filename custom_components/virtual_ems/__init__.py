@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
+from homeassistant.loader import async_get_integration
 
 from .const import (
     ATTR_ONLY_COUNTERS,
@@ -18,6 +19,7 @@ from .const import (
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
 )
+from .bundel import async_setup_frontend
 from .coordinator import VirtualEmsCoordinator
 from .scenarios import SCENARIOS
 
@@ -65,6 +67,18 @@ def _register_services(hass: HomeAssistant) -> None:
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Start één gesimuleerde installatie."""
     coordinator = VirtualEmsCoordinator(hass, entry)
+
+    # De eigen frontend eerst, zodat de versie ervan meteen in de entiteiten
+    # staat. Gaat dit mis, dan draait de rest gewoon door: het dashboard van
+    # losse kaarten blijft dan werken.
+    try:
+        coordinator.frontend_version = await async_setup_frontend(hass)
+    except Exception:  # noqa: BLE001
+        _LOGGER.exception("De eigen frontend kon niet aangemeld worden")
+
+    integratie = await async_get_integration(hass, DOMAIN)
+    coordinator.integration_version = str(integratie.version or "")
+
     await coordinator.async_prepare()
     await coordinator.async_config_entry_first_refresh()
 

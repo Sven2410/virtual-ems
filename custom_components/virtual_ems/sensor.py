@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Any
 
 from homeassistant.components.sensor import (
     ENTITY_ID_FORMAT,
@@ -35,6 +36,9 @@ class VirtualEmsSensorDescription(SensorEntityDescription):
     """Sensorbeschrijving met de som die de waarde levert."""
 
     value_fn: Callable[[Snapshot], float | datetime | None]
+    #: Extra kenmerken bij de waarde, bijvoorbeeld de grens waar een balk
+    #: tegenaan gelegd moet worden.
+    attributes_fn: Callable[["VirtualEmsCoordinator", Snapshot], dict[str, Any]] | None = None
 
 
 def _power(key: str, icon: str, value_fn: Callable[[Snapshot], float]) -> VirtualEmsSensorDescription:
@@ -63,7 +67,18 @@ def _energy(key: str, icon: str, value_fn: Callable[[Snapshot], float]) -> Virtu
 
 SENSORS: tuple[VirtualEmsSensorDescription, ...] = (
     # PV
-    _power("pv_vermogen", "mdi:solar-power", lambda s: s.pv_power_w),
+    VirtualEmsSensorDescription(
+        key="pv_vermogen",
+        icon="mdi:solar-power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_display_precision=0,
+        value_fn=lambda s: s.pv_power_w,
+        # Het piekvermogen staat erbij, zodat een balk op het dashboard tegen een
+        # echte grens gelegd kan worden in plaats van tegen een verzonnen maximum.
+        attributes_fn=lambda c, s: {"piek_w": round(c.simulation.config.pv_peak_kwp * 1000)},
+    ),
     _energy("pv_opbrengst", "mdi:solar-power-variant", lambda s: s.totals.pv_kwh),
     # Batterij
     VirtualEmsSensorDescription(
@@ -97,6 +112,28 @@ SENSORS: tuple[VirtualEmsSensorDescription, ...] = (
     _power("net_vermogen", "mdi:transmission-tower", lambda s: s.grid_power_w),
     _energy("net_afname", "mdi:transmission-tower-export", lambda s: s.totals.grid_import_kwh),
     _energy("net_teruglevering", "mdi:transmission-tower-import", lambda s: s.totals.grid_export_kwh),
+    # Kentallen die een EMS beoordelen
+    VirtualEmsSensorDescription(
+        key="aansluiting_belasting",
+        icon="mdi:gauge",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        value_fn=lambda s: s.connection_load_pct,
+        attributes_fn=lambda c, s: {
+            "grens_w": round(c.simulation.config.connection_power_w),
+            "fasen": c.simulation.config.connection_phases,
+            "ampere_per_fase": c.simulation.config.connection_current_a,
+        },
+    ),
+    VirtualEmsSensorDescription(
+        key="zelfbenutting",
+        icon="mdi:leaf",
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+        value_fn=lambda s: s.self_consumption_pct,
+    ),
     # Diagnose
     VirtualEmsSensorDescription(
         key="zonnehoogte",
@@ -113,6 +150,14 @@ SENSORS: tuple[VirtualEmsSensorDescription, ...] = (
         device_class=SensorDeviceClass.TIMESTAMP,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda s: s.moment,
+        # Hier hangen de versies aan. Een scherm leest ze via de verbinding die
+        # er toch al is, vergelijkt ze met de versie waarmee het zelf geladen
+        # is, en laadt zich eenmalig opnieuw zodra die twee uiteenlopen.
+        attributes_fn=lambda c, s: {
+            "frontend_versie": c.frontend_version,
+            "integratie_versie": c.integration_version,
+            "tijdversnelling": c.simulation.setpoints.time_factor,
+        },
     ),
 )
 
@@ -156,3 +201,10 @@ class VirtualEmsSensor(VirtualEmsEntity, SensorEntity):
         if snapshot is None:
             return None
         return self.entity_description.value_fn(snapshot)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        snapshot = self.coordinator.data
+        if snapshot is None or self.entity_description.attributes_fn is None:
+            return None
+        return self.entity_description.attributes_fn(self.coordinator, snapshot)

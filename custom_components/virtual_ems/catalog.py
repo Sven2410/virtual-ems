@@ -45,6 +45,8 @@ SENSOR_KEYS: tuple[str, ...] = (
     "net_vermogen",
     "net_afname",
     "net_teruglevering",
+    "aansluiting_belasting",
+    "zelfbenutting",
     "zonnehoogte",
     "simulatietijd",
 ) + tuple(f"{key}_verbruik" for key in APPLIANCES)

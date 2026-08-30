@@ -36,50 +36,118 @@
           "batterij_kwh": "Capaciteit thuisbatterij",
           "laadpaal_max_kw": "Maximaal laadvermogen laadpaal",
           "jaarverbruik_kwh": "Jaarverbruik huishouden",
-          "dagstart_uur": "Vaste starttijd van de simulatiedag"
+          "dagstart_uur": "Vaste starttijd van de simulatiedag",
+          "aansluiting_a": "Aansluiting per fase",
+          "fasen": "Aantal fasen"
         },
         "data_description": {
           "jaarverbruik_kwh": "Bepaalt de schaal van de basislast. Vul hier het werkelijke jaarverbruik van de voorbeeldwoning in; de standaardwaarde is slechts een ordegrootte.",
-          "dagstart_uur": "Laat leeg om de echte klok te volgen. Vul bijvoorbeeld 11 in om elke les om 11:00 in de ochtend te beginnen, ook bij een avondles."
+          "dagstart_uur": "Laat leeg om de echte klok te volgen. Vul bijvoorbeeld 11 in om elke les om 11:00 in de ochtend te beginnen, ook bij een avondles.",
+          "aansluiting_a": "Waar de balken op het dashboard tegenaan gelegd worden. Drie fasen van 25 A is gangbaar; een oudere woning heeft vaak één fase van 35 A.",
+          "fasen": "Eén of drie. De simulatie rekent met het totaal, niet per fase."
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "pv_vermogen": { "name": "PV vermogen" },
-      "pv_opbrengst": { "name": "PV opbrengst" },
-      "batterij_soc": { "name": "Batterij SoC" },
-      "batterij_vermogen_actueel": { "name": "Batterij vermogen actueel" },
-      "batterij_inhoud": { "name": "Batterij inhoud" },
-      "batterij_geladen": { "name": "Batterij geladen" },
-      "batterij_ontladen": { "name": "Batterij ontladen" },
-      "laadpaal_vermogen": { "name": "Laadpaal vermogen" },
-      "laadpaal_verbruik": { "name": "Laadpaal verbruik" },
-      "huishoudelijk_verbruik": { "name": "Huishoudelijk verbruik" },
-      "verbruik_totaal": { "name": "Verbruik totaal" },
-      "net_vermogen": { "name": "Net vermogen" },
-      "net_afname": { "name": "Net afname" },
-      "net_teruglevering": { "name": "Net teruglevering" },
-      "zonnehoogte": { "name": "Zonnehoogte" },
-      "simulatietijd": { "name": "Simulatietijd" },
-      "wasmachine_verbruik": { "name": "Wasmachine verbruik" },
-      "boiler_verbruik": { "name": "Boiler verbruik" },
-      "airco_verbruik": { "name": "Airco verbruik" }
+      "pv_vermogen": {
+        "name": "PV vermogen"
+      },
+      "pv_opbrengst": {
+        "name": "PV opbrengst"
+      },
+      "batterij_soc": {
+        "name": "Batterij SoC"
+      },
+      "batterij_vermogen_actueel": {
+        "name": "Batterij vermogen actueel"
+      },
+      "batterij_inhoud": {
+        "name": "Batterij inhoud"
+      },
+      "batterij_geladen": {
+        "name": "Batterij geladen"
+      },
+      "batterij_ontladen": {
+        "name": "Batterij ontladen"
+      },
+      "laadpaal_vermogen": {
+        "name": "Laadpaal vermogen"
+      },
+      "laadpaal_verbruik": {
+        "name": "Laadpaal verbruik"
+      },
+      "huishoudelijk_verbruik": {
+        "name": "Huishoudelijk verbruik"
+      },
+      "verbruik_totaal": {
+        "name": "Verbruik totaal"
+      },
+      "net_vermogen": {
+        "name": "Net vermogen"
+      },
+      "net_afname": {
+        "name": "Net afname"
+      },
+      "net_teruglevering": {
+        "name": "Net teruglevering"
+      },
+      "aansluiting_belasting": {
+        "name": "Aansluiting belasting"
+      },
+      "zelfbenutting": {
+        "name": "Zelfbenutting"
+      },
+      "zonnehoogte": {
+        "name": "Zonnehoogte"
+      },
+      "simulatietijd": {
+        "name": "Simulatietijd"
+      },
+      "wasmachine_verbruik": {
+        "name": "Wasmachine verbruik"
+      },
+      "boiler_verbruik": {
+        "name": "Boiler verbruik"
+      },
+      "airco_verbruik": {
+        "name": "Airco verbruik"
+      }
     },
     "number": {
-      "pv_bewolking": { "name": "PV bewolking" },
-      "batterij_vermogen": { "name": "Batterij vermogen" },
-      "batterij_min_soc": { "name": "Batterij min SoC" },
-      "batterij_max_soc": { "name": "Batterij max SoC" },
-      "laadpaal_vermogen": { "name": "Laadpaal vermogen" },
-      "tijdversnelling": { "name": "Tijdversnelling" }
+      "pv_bewolking": {
+        "name": "PV bewolking"
+      },
+      "batterij_vermogen": {
+        "name": "Batterij vermogen"
+      },
+      "batterij_min_soc": {
+        "name": "Batterij min SoC"
+      },
+      "batterij_max_soc": {
+        "name": "Batterij max SoC"
+      },
+      "laadpaal_vermogen": {
+        "name": "Laadpaal vermogen"
+      },
+      "tijdversnelling": {
+        "name": "Tijdversnelling"
+      }
     },
     "switch": {
-      "laadpaal_actief": { "name": "Laadpaal actief" },
-      "wasmachine": { "name": "Wasmachine" },
-      "boiler": { "name": "Boiler" },
-      "airco": { "name": "Airco" }
+      "laadpaal_actief": {
+        "name": "Laadpaal actief"
+      },
+      "wasmachine": {
+        "name": "Wasmachine"
+      },
+      "boiler": {
+        "name": "Boiler"
+      },
+      "airco": {
+        "name": "Airco"
+      }
     }
   },
   "selector": {
@@ -89,6 +157,12 @@
         "bewolkte_dag": "Zwaar bewolkte dag",
         "piekbelasting_avond": "Piekbelasting in de avond",
         "lege_batterij": "Lege batterij in de ochtend"
+      }
+    },
+    "fasen": {
+      "options": {
+        "1": "1 fase",
+        "3": "3 fasen"
       }
     }
   },

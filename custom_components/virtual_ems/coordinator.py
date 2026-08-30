@@ -22,6 +22,8 @@ from homeassistant.util import dt as dt_util
 from .const import (
     APPLIANCES,
     CONF_ANNUAL_KWH,
+    CONF_CONNECTION_A,
+    CONF_PHASES,
     CONF_BATTERY_KWH,
     CONF_EV_MAX_KW,
     CONF_NAME,
@@ -29,8 +31,10 @@ from .const import (
     CONF_START_HOUR,
     DEFAULT_ANNUAL_KWH,
     DEFAULT_BATTERY_KWH,
+    DEFAULT_CONNECTION_A,
     DEFAULT_EV_MAX_KW,
     DEFAULT_NAME,
+    DEFAULT_PHASES,
     DEFAULT_PV_PEAK_KWP,
     DOMAIN,
     HOUSEHOLD_PROFILE,
@@ -58,6 +62,8 @@ def plant_config_from_entry(hass: HomeAssistant, entry: ConfigEntry) -> PlantCon
         battery_capacity_kwh=float(merged.get(CONF_BATTERY_KWH, DEFAULT_BATTERY_KWH)),
         ev_max_power_w=float(merged.get(CONF_EV_MAX_KW, DEFAULT_EV_MAX_KW)) * 1000.0,
         annual_consumption_kwh=float(merged.get(CONF_ANNUAL_KWH, DEFAULT_ANNUAL_KWH)),
+        connection_current_a=float(merged.get(CONF_CONNECTION_A, DEFAULT_CONNECTION_A)),
+        connection_phases=int(merged.get(CONF_PHASES, DEFAULT_PHASES)),
         latitude=float(hass.config.latitude),
         longitude=float(hass.config.longitude),
         household_profile=HOUSEHOLD_PROFILE,
@@ -88,6 +94,11 @@ class VirtualEmsCoordinator(DataUpdateCoordinator[Snapshot]):
         self._sim_now: datetime = dt_util.now()
         self._updates_since_save = 0
         self._unsub_stop = None
+        #: De versie van de eigen frontend en van de integratie. Ze komen als
+        #: kenmerk op een entiteit te staan, zodat een scherm kan zien of het
+        #: oude code draait.
+        self.frontend_version: str = "onbekend"
+        self.integration_version: str = ""
 
     # -- opstarten en opruimen ----------------------------------------------
 

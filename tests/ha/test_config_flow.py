@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -10,12 +12,24 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.virtual_ems.const import (
     CONF_ANNUAL_KWH,
     CONF_BATTERY_KWH,
+    CONF_CONNECTION_A,
     CONF_EV_MAX_KW,
     CONF_NAME,
+    CONF_PHASES,
     CONF_PV_PEAK_KWP,
     CONF_START_HOUR,
     DOMAIN,
 )
+
+#: Wat de optiesdialoog minimaal terugkrijgt.
+OPTIES = {
+    CONF_PV_PEAK_KWP: 4.0,
+    CONF_BATTERY_KWH: 10.0,
+    CONF_EV_MAX_KW: 11.0,
+    CONF_ANNUAL_KWH: 2900.0,
+    CONF_CONNECTION_A: 25.0,
+    CONF_PHASES: "3",
+}
 
 INVOER = {
     CONF_NAME: "Lokaal A",
@@ -86,10 +100,13 @@ async def test_opties_aanpassen_zonder_opnieuw_te_installeren(hass: HomeAssistan
     resultaat = await hass.config_entries.options.async_configure(
         resultaat["flow_id"],
         {
+            **OPTIES,
             CONF_PV_PEAK_KWP: 8.0,
             CONF_BATTERY_KWH: 20.0,
             CONF_EV_MAX_KW: 22.0,
             CONF_ANNUAL_KWH: 3500.0,
+            CONF_CONNECTION_A: 35.0,
+            CONF_PHASES: "1",
             CONF_START_HOUR: 11.0,
         },
     )
@@ -104,6 +121,8 @@ async def test_opties_aanpassen_zonder_opnieuw_te_installeren(hass: HomeAssistan
     assert coordinator.simulation.config.pv_peak_kwp == 8.0
     assert coordinator.simulation.config.battery_capacity_kwh == 20.0
     assert coordinator.simulation.config.ev_max_power_w == 22000.0
+    # Eén fase van 35 A bij 230 V is 8050 W.
+    assert coordinator.simulation.config.connection_power_w == pytest.approx(8050.0)
 
 
 async def test_starttijd_mag_leeg_blijven(hass: HomeAssistant):
@@ -115,12 +134,7 @@ async def test_starttijd_mag_leeg_blijven(hass: HomeAssistant):
     resultaat = await hass.config_entries.options.async_init(entry.entry_id)
     resultaat = await hass.config_entries.options.async_configure(
         resultaat["flow_id"],
-        {
-            CONF_PV_PEAK_KWP: 4.0,
-            CONF_BATTERY_KWH: 10.0,
-            CONF_EV_MAX_KW: 11.0,
-            CONF_ANNUAL_KWH: 2900.0,
-        },
+        OPTIES,
     )
     await hass.async_block_till_done()
 

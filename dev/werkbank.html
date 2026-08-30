@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Werkbank virtueel EMS</title>
+    <style>
+      /* De werkbank gebruikt hetzelfde systeemfont als het dashboard zelf.
+         Zou hij een ander font nemen, dan liegt hij over uitlijning en
+         regellengte. */
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0c0c0a;
+        color: #e8e4de;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      #paneel {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 8px 12px;
+        background: #12120f;
+        border-bottom: 1px solid rgba(232, 228, 222, 0.1);
+        font-size: 12px;
+      }
+      #paneel button {
+        font: inherit;
+        padding: 6px 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(232, 228, 222, 0.2);
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        cursor: pointer;
+      }
+      #doek {
+        margin: 0 auto;
+        max-width: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="paneel">
+      <span id="stand">bezig met laden</span>
+      <button id="cursist" type="button">cursist</button>
+      <button id="docent" type="button">docent</button>
+      <button id="terug" type="button">stand terugzetten</button>
+    </div>
+    <div id="doek"></div>
+
+    <script type="module">
+      // De werkbank draait de echte kaarten tegen een nagemaakte hass, zodat
+      // alles in een echte browser te meten is zonder dat er een Home Assistant
+      // bij hoeft te staan. De kaarten zelf zijn onveranderd: er wordt hier
+      // niets nagebouwd.
+      const BASIS = "../custom_components/virtual_ems/frontend/";
+
+      window.__kliks = [];
+      document.addEventListener(
+        "click",
+        (e) => {
+          window.__kliks.push({
+            x: e.clientX,
+            y: e.clientY,
+            op: e.composedPath()[0] ? e.composedPath()[0].tagName : null,
+            klasse: e.composedPath()[0] ? e.composedPath()[0].className : null,
+            echt: e.isTrusted,
+          });
+        },
+        true
+      );
+      window.__toetsen = [];
+      document.addEventListener(
+        "keydown",
+        (e) => {
+          window.__toetsen.push({ toets: e.key, echt: e.isTrusted });
+        },
+        true
+      );
+
+      window.__aanroepen = [];
+
+      const SLUG = "lokaal_a";
+
+      function sensor(sleutel, waarde, eenheid, extra) {
+        return [
+          "sensor." + SLUG + "_" + sleutel,
+          {
+            entity_id: "sensor." + SLUG + "_" + sleutel,
+            state: String(waarde),
+            attributes: Object.assign(
+              { friendly_name: "Lokaal A " + sleutel.replace(/_/g, " "), unit_of_measurement: eenheid },
+              extra || {}
+            ),
+          },
+        ];
+      }
+
+      function nummer(sleutel, waarde, min, max, stap, eenheid) {
+        return [
+          "number." + SLUG + "_" + sleutel,
+          {
+            entity_id: "number." + SLUG + "_" + sleutel,
+            state: String(waarde),
+            attributes: {
+              friendly_name: "Lokaal A " + sleutel.replace(/_/g, " "),
+              min: min,
+              max: max,
+              step: stap,
+              mode: "slider",
+              unit_of_measurement: eenheid,
+            },
+          },
+        ];
+      }
+
+      function schakelaar(sleutel, aan, watt) {
+        return [
+          "switch." + SLUG + "_" + sleutel,
+          {
+            entity_id: "switch." + SLUG + "_" + sleutel,
+            state: aan ? "on" : "off",
+            attributes: {
+              friendly_name: "Lokaal A " + sleutel.replace(/_/g, " "),
+              vermogen_w: watt,
+            },
+          },
+        ];
+      }
+
+      // Deze standen komen uit een echte doorrekening van de kern: 21 juni,
+      // 13:00, 4 kWp, batterij van 10 kWh die met 2 kW laadt, laadpaal uit.
+      function beginstand() {
+        return Object.fromEntries([
+          sensor("pv_vermogen", 3104, "W", { piek_w: 4000 }),
+          sensor("pv_opbrengst", 11.42, "kWh"),
+          sensor("batterij_soc", 62.4, "%"),
+          sensor("batterij_vermogen_actueel", 2000, "W"),
+          sensor("batterij_inhoud", 6.24, "kWh"),
+          sensor("batterij_geladen", 4.108, "kWh"),
+          sensor("batterij_ontladen", 1.902, "kWh"),
+          sensor("laadpaal_vermogen", 0, "W"),
+          sensor("laadpaal_verbruik", 0, "kWh"),
+          sensor("huishoudelijk_verbruik", 486, "W"),
+          sensor("verbruik_totaal", 3.771, "kWh"),
+          sensor("net_vermogen", -618, "W"),
+          sensor("net_afname", 2.114, "kWh"),
+          sensor("net_teruglevering", 0.938, "kWh"),
+          sensor("aansluiting_belasting", 3.58, "%", {
+            grens_w: 17250,
+            fasen: 3,
+            ampere_per_fase: 25,
+          }),
+          sensor("zelfbenutting", 91.8, "%"),
+          sensor("zonnehoogte", 58.3, "°"),
+          [
+            "sensor." + SLUG + "_simulatietijd",
+            {
+              entity_id: "sensor." + SLUG + "_simulatietijd",
+              state: "2026-06-21T13:00:00+02:00",
+              attributes: {
+                friendly_name: "Lokaal A simulatietijd",
+                device_class: "timestamp",
+                frontend_versie: new URLSearchParams(location.search).get("v") || "werkbank",
+                integratie_versie: "1.1.0",
+                tijdversnelling: 10,
+              },
+            },
+          ],
+          sensor("wasmachine_verbruik", 0, "kWh"),
+          sensor("boiler_verbruik", 0.417, "kWh"),
+          sensor("airco_verbruik", 0, "kWh"),
+          nummer("pv_bewolking", 0, 0, 100, 1, "%"),
+          nummer("batterij_vermogen", 2000, -5000, 5000, 100, "W"),
+          nummer("batterij_min_soc", 10, 0, 100, 5, "%"),
+          nummer("batterij_max_soc", 100, 0, 100, 5, "%"),
+          nummer("laadpaal_vermogen", 3700, 0, 11000, 100, "W"),
+          nummer("tijdversnelling", 10, 1, 60, 1, ""),
+          schakelaar("laadpaal_actief", false, 0),
+          schakelaar("wasmachine", false, 2000),
+          schakelaar("boiler", true, 2500),
+          schakelaar("airco", false, 1200),
+        ]);
+      }
+
+      const hass = {
+        states: beginstand(),
+        entities: {},
+        language: "nl",
+        callService(domein, dienst, gegevens) {
+          window.__aanroepen.push({ domein, dienst, gegevens, tijd: Date.now() });
+          // De werkbank rekent niet, maar zet de stand wel door, zodat een klik
+          // ook echt iets doet en de kaart daarop reageert.
+          if (domein === "switch" && dienst === "toggle") {
+            const s = this.states[gegevens.entity_id];
+            if (s) s.state = s.state === "on" ? "off" : "on";
+          }
+          if (domein === "number" && dienst === "set_value") {
+            const s = this.states[gegevens.entity_id];
+            if (s) s.state = String(gegevens.value);
+          }
+          teken();
+          return Promise.resolve();
+        },
+      };
+      // Het apparatenregister, want daar haalt de frontend de naam van de
+      // installatie vandaan.
+      hass.devices = {
+        apparaat1: { id: "apparaat1", name: "Lokaal A", name_by_user: null },
+      };
+      Object.keys(hass.states).forEach((id) => {
+        hass.entities[id] = { entity_id: id, platform: "virtual_ems", device_id: "apparaat1" };
+      });
+      window.__hass = hass;
+
+      let weergave = "cursist";
+      let pagina = null;
+
+      function teken() {
+        if (!pagina) return;
+        pagina.hass = Object.assign({}, hass, { states: Object.assign({}, hass.states) });
+      }
+
+      async function start() {
+        const versie = String(Date.now());
+        const module = await import(BASIS + "virtual-ems.js?v=" + versie);
+        void module;
+        // De nagemaakte integratie meldt dezelfde versie als waarmee de bundel
+        // geladen is. Zet je hier met de hand iets anders neer, dan hoort het
+        // scherm te melden dat het oude code draait en zich eenmalig te
+        // herladen; dat is precies hoe het op een telefoon moet werken.
+        hass.states["sensor." + SLUG + "_simulatietijd"].attributes.frontend_versie = versie;
+        await customElements.whenDefined("virtual-ems-pagina");
+
+        // Meet dat we verse code binnenkregen: de lengte van elk bestand zoals
+        // de browser het kreeg, zodat het naast het bestand op schijf te leggen
+        // is.
+        const bestanden = [
+          "virtual-ems.js",
+          "registratie.js",
+          "stijl.js",
+          "basis.js",
+          "iconen.js",
+          "entiteiten.js",
+          "kaarten.js",
+          "bediening.js",
+          "pagina.js",
+          "strategie.js",
+          "versie.js",
+        ];
+        window.__lengtes = {};
+        for (const naam of bestanden) {
+          const antwoord = await fetch(BASIS + naam + "?meet=" + versie, { cache: "no-store" });
+          const tekst = await antwoord.text();
+          window.__lengtes[naam] = tekst.length;
+        }
+
+        bouw();
+        document.getElementById("stand").textContent = "klaar";
+        window.__klaar = true;
+      }
+
+      function bouw() {
+        const doek = document.getElementById("doek");
+        doek.innerHTML = "";
+        pagina = document.createElement("virtual-ems-pagina");
+        pagina.setConfig({ installatie: SLUG, weergave: weergave });
+        doek.appendChild(pagina);
+        teken();
+        window.__pagina = pagina;
+      }
+
+      document.getElementById("cursist").addEventListener("click", () => {
+        weergave = "cursist";
+        bouw();
+      });
+      document.getElementById("docent").addEventListener("click", () => {
+        weergave = "docent";
+        bouw();
+      });
+      document.getElementById("terug").addEventListener("click", () => {
+        hass.states = beginstand();
+        window.__aanroepen = [];
+        teken();
+      });
+
+      // Handig bij het meten: haal een element uit de schaduwbomen op.
+      window.__vind = function (pad) {
+        let knoop = document.querySelector("virtual-ems-pagina");
+        const delen = pad.split(">>");
+        for (let i = 0; i < delen.length; i++) {
+          const selector = delen[i].trim();
+          const wortel = knoop.shadowRoot || knoop;
+          knoop = wortel.querySelector(selector);
+          if (!knoop) return null;
+        }
+        return knoop;
+      };
+
+      start().catch((fout) => {
+        document.getElementById("stand").textContent = "fout: " + fout.message;
+        window.__fout = String(fout && fout.stack ? fout.stack : fout);
+      });
+    </script>
+  </body>
+</html>

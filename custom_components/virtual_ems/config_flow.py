@@ -17,6 +17,9 @@ from homeassistant.helpers.selector import (
     NumberSelector,
     NumberSelectorConfig,
     NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
 )
 from homeassistant.util import slugify
@@ -24,14 +27,18 @@ from homeassistant.util import slugify
 from .const import (
     CONF_ANNUAL_KWH,
     CONF_BATTERY_KWH,
+    CONF_CONNECTION_A,
     CONF_EV_MAX_KW,
     CONF_NAME,
+    CONF_PHASES,
     CONF_PV_PEAK_KWP,
     CONF_START_HOUR,
     DEFAULT_ANNUAL_KWH,
     DEFAULT_BATTERY_KWH,
+    DEFAULT_CONNECTION_A,
     DEFAULT_EV_MAX_KW,
     DEFAULT_NAME,
+    DEFAULT_PHASES,
     DEFAULT_PV_PEAK_KWP,
     DOMAIN,
 )
@@ -54,6 +61,14 @@ BATTERY_SELECTOR = _number(0.0, 100.0, 0.5, "kWh")
 EV_SELECTOR = _number(1.4, 22.0, 0.1, "kW")
 ANNUAL_SELECTOR = _number(500.0, 20000.0, 50.0, "kWh")
 HOUR_SELECTOR = _number(0.0, 23.75, 0.25, "uur")
+CONNECTION_SELECTOR = _number(6.0, 80.0, 1.0, "A")
+PHASE_SELECTOR = SelectSelector(
+    SelectSelectorConfig(
+        options=["1", "3"],
+        mode=SelectSelectorMode.DROPDOWN,
+        translation_key="fasen",
+    )
+)
 
 
 class VirtualEmsConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -116,6 +131,8 @@ class VirtualEmsOptionsFlow(OptionsFlow):
                 CONF_BATTERY_KWH: float(user_input[CONF_BATTERY_KWH]),
                 CONF_EV_MAX_KW: float(user_input[CONF_EV_MAX_KW]),
                 CONF_ANNUAL_KWH: float(user_input[CONF_ANNUAL_KWH]),
+                CONF_CONNECTION_A: float(user_input[CONF_CONNECTION_A]),
+                CONF_PHASES: int(user_input[CONF_PHASES]),
             }
             if user_input.get(CONF_START_HOUR) is not None:
                 options[CONF_START_HOUR] = float(user_input[CONF_START_HOUR])
@@ -140,6 +157,14 @@ class VirtualEmsOptionsFlow(OptionsFlow):
                     CONF_ANNUAL_KWH,
                     default=current.get(CONF_ANNUAL_KWH, DEFAULT_ANNUAL_KWH),
                 ): ANNUAL_SELECTOR,
+                vol.Required(
+                    CONF_CONNECTION_A,
+                    default=current.get(CONF_CONNECTION_A, DEFAULT_CONNECTION_A),
+                ): CONNECTION_SELECTOR,
+                vol.Required(
+                    CONF_PHASES,
+                    default=str(int(current.get(CONF_PHASES, DEFAULT_PHASES))),
+                ): PHASE_SELECTOR,
                 vol.Optional(
                     CONF_START_HOUR,
                     description={"suggested_value": current.get(CONF_START_HOUR)},
