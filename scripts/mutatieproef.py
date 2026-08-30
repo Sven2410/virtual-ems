@@ -21,6 +21,27 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+
+REGELEINDE = "\n"
+
+
+def lees(pad: Path) -> str:
+    """Lees met de regeleindes vertaald, zodat de zoekteksten matchen."""
+    with pad.open(encoding="utf-8") as bestand:
+        return bestand.read()
+
+
+def schrijf(pad: Path, tekst: str) -> None:
+    """Schrijf met een enkel regeleinde, ook op Windows.
+
+    Zou Python hier zijn eigen regeleinde gebruiken, dan zet het terugzetten van
+    een bestand elke regel om naar CRLF en staat de hele repository na afloop als
+    gewijzigd te boek, terwijl er inhoudelijk niets veranderd is.
+    """
+    with pad.open("w", encoding="utf-8", newline=REGELEINDE) as bestand:
+        bestand.write(tekst)
+
+
 REPO = Path(__file__).resolve().parents[1]
 COMPONENT = REPO / "custom_components" / "virtual_ems"
 
@@ -182,20 +203,18 @@ def main() -> int:
 
     mislukt = 0
     for mutatie in MUTATIES:
-        origineel = mutatie.bestand.read_text(encoding="utf-8")
+        origineel = lees(mutatie.bestand)
         if mutatie.zoek not in origineel:
             print(f"OVERGESLAGEN  {mutatie.naam}")
             print(f"              de te vervangen tekst staat niet in {mutatie.bestand.name}")
             mislukt += 1
             continue
 
-        mutatie.bestand.write_text(
-            origineel.replace(mutatie.zoek, mutatie.vervang, 1), encoding="utf-8"
-        )
+        schrijf(mutatie.bestand, origineel.replace(mutatie.zoek, mutatie.vervang, 1))
         try:
             groen, samenvatting = draai(mutatie.proeven, argumenten.pytest_arg)
         finally:
-            mutatie.bestand.write_text(origineel, encoding="utf-8")
+            schrijf(mutatie.bestand, origineel)
 
         if groen:
             print(f"BEWAAKT NIET  {mutatie.naam}")

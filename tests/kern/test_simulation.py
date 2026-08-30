@@ -14,11 +14,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from custom_components.virtual_ems.simulation import (
-    PlantConfig,
-    Simulation,
-    solar_position,
-)
+from kernlader import PlantConfig, Simulation, solar_position
 
 AMSTERDAM = ZoneInfo("Europe/Amsterdam")
 

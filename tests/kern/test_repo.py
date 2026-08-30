@@ -15,15 +15,16 @@ import pytest
 
 yaml = pytest.importorskip("yaml")
 
-from custom_components.virtual_ems.catalog import ENTITY_KEYS  # noqa: E402
-from custom_components.virtual_ems.const import (  # noqa: E402
+from kernlader import (  # noqa: E402
     APPLIANCES,
     DOMAIN,
+    ENTITY_KEYS,
+    KERNBESTANDEN,
+    SCENARIOS,
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
     UPDATE_INTERVAL_SECONDS,
 )
-from custom_components.virtual_ems.scenarios import SCENARIOS  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 COMPONENT = REPO / "custom_components" / DOMAIN
@@ -186,13 +187,34 @@ def test_elk_apparaat_heeft_een_schakelaar_en_een_teller():
 )
 def test_de_naam_wordt_dezelfde_slug_als_in_de_entity_id(naam: str, verwacht: str):
     """De dashboards leunen hierop; tests/ha legt dit naast de slugify van HA."""
-    from custom_components.virtual_ems.catalog import slugify_naam
+    from kernlader import slugify_naam
 
     assert slugify_naam(naam) == verwacht
 
 
 def test_de_meegeleverde_dashboards_gebruiken_de_standaardnaam():
-    from custom_components.virtual_ems.catalog import slugify_naam
-    from custom_components.virtual_ems.const import DEFAULT_NAME
+    from kernlader import DEFAULT_NAME, slugify_naam
 
     assert slugify_naam(DEFAULT_NAME) == "virtueel_ems"
+
+
+# --- De rekenkern staat los van Home Assistant -------------------------------
+
+
+@pytest.mark.parametrize("bestand", KERNBESTANDEN)
+def test_de_rekenkern_noemt_home_assistant_nergens(bestand: str):
+    """Anders is de kern niet meer los te draaien tegen een hele dag gegevens.
+
+    De structurele bewaking zit in kernlader.py: die laadt deze bestanden zonder
+    het Home Assistant-pakket eromheen, dus een import die er niet hoort laat
+    alle kernproeven vallen op een machine zonder Home Assistant. Deze proef zegt
+    er alleen nog bij wélk woord er dan te veel staat.
+    """
+    tekst = (COMPONENT / bestand).read_text(encoding="utf-8")
+    regels = [
+        f"{nummer}: {regel.strip()}"
+        for nummer, regel in enumerate(tekst.splitlines(), start=1)
+        if regel.lstrip().startswith(("import ", "from "))
+        and ("homeassistant" in regel or "voluptuous" in regel)
+    ]
+    assert not regels, f"{bestand} hangt aan Home Assistant: {regels}"

@@ -1,13 +1,14 @@
 # Ronde 1: virtual_ems, een virtueel EMS voor het practicum
 
 Datum: 30 augustus 2026
-Tak: `ronde-1-virtueel-ems`, samengevoegd in `main`, uitgave `v1.0.0`
+Repository: <https://github.com/Sven2410/virtual-ems>
+Tak: `ronde-1-virtueel-ems`, via PR #1 samengevoegd in `main`, uitgave `v1.0.0`
 
 ---
 
 ## 1. Wat er staat
 
-Een complete HACS-custom-repository met vier onderdelen.
+Een complete HACS-custom-repository.
 
 **De integratie** in `custom_components/virtual_ems/`, opgesplitst in een
 rekenkern en de bedrading eromheen:
@@ -22,8 +23,7 @@ rekenkern en de bedrading eromheen:
 | `config_flow.py` | Installatiedialoog en optiesdialoog | ja |
 | `sensor.py`, `number.py`, `switch.py`, `entity.py` | De entiteiten | ja |
 
-De rekenkern draait dus zonder Home Assistant, en dat is precies waarom er een
-hele gesimuleerde dag tegenaan te draaien valt voordat er iets geschakeld wordt.
+Die vier bovenste bestanden draaien aantoonbaar zonder Home Assistant, zie 2.5.
 
 **29 entiteiten** onder één apparaat: 19 sensoren, 6 instelbare waarden en
 4 schakelaars. Onder die 19 zit per virtueel apparaat een eigen kWh-teller, voor
@@ -31,8 +31,8 @@ de sectie Apparaten van het energiedashboard. De volledige tabel staat in de
 README.
 
 **Twee services**, `virtual_ems.set_scenario` met vier scenario's en
-`virtual_ems.reset`, allebei met Nederlandse teksten in `services.yaml` én in
-de vertalingen.
+`virtual_ems.reset`, allebei met Nederlandse teksten in `services.yaml` én in de
+vertalingen.
 
 **Twee complete dashboards** in `dashboards/`, klaar om in de ruwe
 configuratie-editor te plakken. Het cursist-dashboard heeft het
@@ -46,6 +46,9 @@ benoemde tegelkleuren.
 kiosk-mode, het cursistaccount, het energiedashboard, het entiteitenoverzicht en
 drie uitgewerkte oefeningen.
 
+**Een MIT-licentie**, op jouw keuze, plus onderwerpen op de repository. Beide
+waren nodig voor de HACS-controle.
+
 ---
 
 ## 2. Het bewijs
@@ -54,19 +57,18 @@ drie uitgewerkte oefeningen.
 
 ```
 $ python -m pytest -p windows_shim --no-header
-........................................................................ [ 72%]
-...........................                                              [100%]
-99 passed in 3.14s
+........................................................................ [ 69%]
+...............................                                          [100%]
+103 passed in 4.39s
 ```
 
 Verdeeld over:
 
-* `tests/kern/` (78 proeven): rekenkern, scenario's, dashboardbewaker,
+* `tests/kern/` (82 proeven): rekenkern, scenario's, dashboardbewaker,
   verpakkingsbewaker. Draait zonder Home Assistant, dus overal.
 * `tests/ha/` (21 proeven): config flow, optiesdialoog, entiteiten, services,
   opslag over een herstart heen. Draait met een echte Home Assistant in het
-  geheugen (2026.9.0b3, de versie die
-  `pytest-homeassistant-custom-component` vastpint).
+  geheugen.
 
 De gevraagde controles zitten er allemaal in:
 
@@ -81,7 +83,17 @@ Daarbovenop staat er een energiebalansproef over een hele gesimuleerde dag:
 `afname - teruglevering` moet exact gelijk zijn aan
 `huis + laadpaal + laden - ontladen - zon`, tot op 1e-6 kWh.
 
-### 2.2 De proeven zijn onderscheidend
+### 2.2 Ook groen op Linux, in CI, met een echte Home Assistant
+
+De baan **Proeven met Home Assistant** in
+`.github/workflows/proeven.yml` draait op ubuntu de volledige set, met
+`pytest-homeassistant-custom-component` en dus met een echte Home Assistant
+(2026.9.0b3). Die baan was groen op de eerste poging. De Windows-hulpstukken in
+`windows_shim.py` zijn dus alleen een gemak voor jouw werkplek en geen
+voorbehoud bij het bewijs. De baan **Manifest volgens de regels van Home
+Assistant** (hassfest) was eveneens groen op de eerste poging.
+
+### 2.3 De proeven zijn onderscheidend
 
 Een proef die altijd groen is bewijst niets. `scripts/mutatieproef.py` breekt
 telkens één ding en verwacht dat de bijbehorende proef valt:
@@ -89,36 +101,25 @@ telkens één ding en verwacht dat de bijbehorende proef valt:
 ```
 $ python scripts/mutatieproef.py --pytest-arg=-p --pytest-arg=windows_shim
 GEVANGEN      azimut via een enkele acos (de fout die op 21 juni de zon in het noorden zette)
-              FAILED tests/kern/test_simulation.py::test_zon_staat_s_ochtends_in_het_oosten_en_s_avonds_in_het_westen
-              De zonnehoogte blijft kloppen, dus een schermafdruk verraadt dit niet.
 GEVANGEN      batterij laadt zonder te kijken hoeveel er nog in past
-              FAILED tests/kern/test_simulation.py::test_batterij_laadt_niet_boven_de_ingestelde_bovengrens
 GEVANGEN      batterij ontlaadt zonder ondergrens
-              FAILED tests/kern/test_simulation.py::test_batterij_ontlaadt_niet_onder_de_ingestelde_ondergrens
 GEVANGEN      netvermogen telt de zon erbij op in plaats van eraf
-              FAILED tests/kern/test_simulation.py::test_teruglevering_krijgt_een_negatief_netvermogen
 GEVANGEN      terugzetten laat de tellers staan
-              FAILED tests/kern/test_simulation.py::test_reset_met_alleen_tellers_laat_de_bediening_staan
 GEVANGEN      laadpaal springt in een stap naar zijn eindvermogen
-              FAILED tests/kern/test_simulation.py::test_laadpaal_loopt_op_in_plaats_van_te_springen
 GEVANGEN      bewolking werkt niet meer door in de opbrengst
-              FAILED tests/kern/test_scenarios.py::test_bewolkte_dag_levert_veel_minder_dan_een_zonnige_dag
 GEVANGEN      een tikfout in een entity_id op het cursist-dashboard
-              FAILED tests/kern/test_dashboards.py::test_elke_entiteit_op_het_dashboard_bestaat_ook_echt[cursist-dashboard.yaml]
-              Home Assistant meldt zoiets niet; de kaart wordt gewoon grijs.
 GEVANGEN      een scenarioknop die naar een niet-bestaand scenario wijst
-              FAILED tests/kern/test_dashboards.py::test_alle_scenarios_staan_op_het_docentdashboard
 GEVANGEN      een ontbrekende Nederlandse naam voor een entiteit
-              FAILED tests/kern/test_repo.py::test_beide_talen_hebben_dezelfde_sleutels
 GEVANGEN      een entiteit die wel bestaat maar niet in de catalogus staat
-              FAILED tests/ha/test_entiteiten.py::test_alle_entiteiten_uit_de_catalogus_bestaan_ook_echt
 
 Alle 11 mutaties werden gevangen.
 ```
 
-Het script zet elk bestand daarna weer terug; na afloop is `git status` schoon.
+Het script zet elk bestand daarna weer terug, met een enkel regeleinde, zodat de
+werkboom na afloop schoon is. De volledige uitvoer met de gevallen proef per
+mutatie staat in de opdrachtregel zelf.
 
-### 2.3 Een echte fout, gevonden door een proef
+### 2.4 Een echte fout, gevonden door een proef
 
 `test_zon_staat_op_zijn_hoogst_pal_in_het_zuiden` was bij de eerste run rood:
 
@@ -134,14 +135,47 @@ zonnehoogte klopte wel, dus een schermafdruk van de PV-curve had dit nooit
 verraden, terwijl de fout wel degelijk doorwerkte: de azimut gaat via de
 invalshoek rechtstreeks in de opbrengst van het hellend paneelvlak.
 
-De reparatie rekent de azimut uit de oost- en noordcomponent van de
-zonnevector met `atan2`, waardoor elk kwadrant vanzelf klopt. Er staat nu een
-tweede proef bij die de ochtend en de avond apart controleert, want de
-middagproef alleen zou de acos-versie op een halve dag niet betrappen. De
-mutatieproef hierboven draait precies die oude code terug en toont dat beide
-proeven dan vallen.
+De reparatie rekent de azimut uit de oost- en noordcomponent van de zonnevector
+met `atan2`, waardoor elk kwadrant vanzelf klopt. Er staat nu een tweede proef
+bij die de ochtend en de avond apart controleert, want de middagproef alleen zou
+de acos-versie op een halve dag niet betrappen. De mutatieproef hierboven draait
+precies die oude code terug en toont dat beide proeven dan vallen.
 
-### 2.4 De entity_id's zijn wat de opdracht vroeg
+### 2.5 En een tweede, gevonden door CI
+
+De eerste CI-run zette de baan **Kernproeven (zonder Home Assistant)** rood:
+
+```
+custom_components/virtual_ems/__init__.py:7: in <module>
+    import voluptuous as vol
+E   ModuleNotFoundError: No module named 'voluptuous'
+```
+
+Lokaal was daar niets van te merken, want in mijn proefomgeving stond Home
+Assistant gewoon geïnstalleerd. De uitspraak "de rekenkern is los te draaien"
+klopte dus wel voor de vier bestanden, maar niet in de praktijk: wie
+`custom_components.virtual_ems.simulation` importeert voert eerst `__init__.py`
+uit, en dat is het aanknopingspunt voor Home Assistant. Op een machine zonder
+Home Assistant viel de kern om op een import die met de som niets te maken heeft.
+
+`tests/kern/kernlader.py` zet nu een eigen pakketnaam neer die naar dezelfde map
+wijst, zonder dat `__init__.py` wordt uitgevoerd. Dat is meteen de bewaking:
+sluipt er ooit een Home Assistant-import in de rekenkern, dan vallen alle
+kernproeven om zodra ze zonder Home Assistant draaien. `test_repo.py` zegt er
+daarnaast in gewone taal bij welk woord er te veel staat.
+
+Nagemeten in een omgeving met alleen `pytest`, `PyYAML` en `tzdata`, dus zonder
+Home Assistant en zonder voluptuous:
+
+```
+$ python -c "import homeassistant"
+ModuleNotFoundError: No module named 'homeassistant'
+
+$ python -m pytest tests/kern --no-header
+82 passed, 1 warning in 0.39s
+```
+
+### 2.6 De entity_id's zijn wat de opdracht vroeg
 
 Uit het opzetlog van de proef met installatienaam `Lokaal A`:
 
@@ -154,15 +188,15 @@ Registered new switch.virtual_ems entity: switch.lokaal_a_wasmachine
 ```
 
 Dat is geen toeval: de entity_id wordt in `entity.py` vastgelegd op
-`<naam>_<sleutel>`. Zouden we dat aan Home Assistant overlaten, dan leidt hij
-hem af uit de vertaalde naam, en dan heet dezelfde sensor op een Engelstalige
-installatie `sensor.lokaal_a_pv_power` en wijzen de dashboards naar niets. In
-het log hierboven staat de weergavenaam ook echt als `Lokaal A Grid import`,
-want die proef draait in het Engels: het bewijs dat de vastlegging nodig was.
+`<naam>_<sleutel>`. Zouden we dat aan Home Assistant overlaten, dan leidt hij hem
+af uit de vertaalde naam, en dan heet dezelfde sensor op een Engelstalige
+installatie `sensor.lokaal_a_pv_power` en wijzen de dashboards naar niets. In het
+log hierboven staat de weergavenaam ook echt als `Lokaal A Grid import`, want die
+proef draait in het Engels: het bewijs dat de vastlegging nodig was.
 
-### 2.5 Automatische bewakers, niet goede voornemens
+### 2.7 Automatische bewakers, niet goede voornemens
 
-Drie fouten die een script kan vangen hangen nu aan de proefronde en aan CI, en
+Vier fouten die een script kan vangen hangen nu aan de proefronde en aan CI, en
 niet aan of iemand eraan denkt:
 
 1. **Dashboard tegen werkelijkheid.** `tests/kern/test_dashboards.py` haalt elke
@@ -172,13 +206,15 @@ niet aan of iemand eraan denkt:
 2. **Catalogus tegen werkelijkheid.** Die catalogus mag zelf niet gaan liegen,
    dus `tests/ha/test_entiteiten.py` zet de integratie echt op en vergelijkt de
    aangemaakte entiteiten één op één met de catalogus.
-3. **Verpakking tegen code.** `tests/kern/test_repo.py` controleert manifest,
+3. **Rekenkern tegen omgeving.** `tests/kern/kernlader.py` laadt de kern zonder
+   het Home Assistant-pakket eromheen, zodat 2.5 zich niet kan herhalen.
+4. **Verpakking tegen code.** `tests/kern/test_repo.py` controleert manifest,
    hacs.json, beide vertalingen (compleet, gelijk van structuur, en gelijk aan
    `strings.json`), de scenariolijst in `services.yaml`, en dat er geen
    gedachtestreepjes in de Nederlandse teksten staan.
 
-In `.github/workflows/proeven.yml` draaien daarnaast hassfest en de
-HACS-controle bij elke duw en elk verzoek tot samenvoegen.
+In CI draaien daarnaast hassfest en de HACS-controle bij elke duw naar `main` en
+bij elk verzoek tot samenvoegen.
 
 ---
 
@@ -198,30 +234,30 @@ lessituatie hoort.
 grens in zicht komt lopen die twee uiteen, en dat verschil is de kern van
 oefening 2.
 
-**`verbruik_totaal` telt de laadpaal niet mee.** In het energiedashboard staat
-de laadpaal onder Individuele apparaten; zou de totaalteller hem meenemen, dan
-telt hij dubbel. De teller volgt daarom precies wat
+**`verbruik_totaal` telt de laadpaal niet mee.** In het energiedashboard staat de
+laadpaal onder Individuele apparaten; zou de totaalteller hem meenemen, dan telt
+hij dubbel. De teller volgt daarom precies wat
 `sensor.<naam>_huishoudelijk_verbruik` levert: basislast plus apparaten.
 
 **Kleurtoedeling.** De zes stroomkleuren zijn onaangeroerd overgenomen. Er zijn
 alleen zeven stromen te benoemen (zon, huis, netafname, teruglevering, laadpaal,
 batterij laden, batterij ontladen) en zes kleuren. De toedeling is: zon
 `--solar`, huis `--house`, netafname `--grid-in`, teruglevering `--grid-out`,
-laadpaal `--device-1`, batterij `--device-2`. In het energiedashboard staan
-laden en ontladen naast elkaar in één grafiek en moeten ze uit elkaar te houden
-zijn; daar krijgt laden `--device-2` en ontladen `--device-1`. Dat is de enige
-plek waar een kleur dubbel dienst doet, en elke stroom draagt daar hoe dan ook
-een eigen icoon en een geschreven label.
+laadpaal `--device-1`, batterij `--device-2`. In het energiedashboard staan laden
+en ontladen naast elkaar in één grafiek en moeten ze uit elkaar te houden zijn;
+daar krijgt laden `--device-2` en ontladen `--device-1`. Dat is de enige plek
+waar een kleur dubbel dienst doet, en elke stroom draagt daar hoe dan ook een
+eigen icoon en een geschreven label.
 
-**Elk getal komt ergens vandaan.** De zonnestand volgt NOAA en Spencer (1971),
-de luchtmassa Kasten en Young (1989), de heldere-hemelstraling Meinel en Meinel
+**Elk getal komt ergens vandaan.** De zonnestand volgt NOAA en Spencer (1971), de
+luchtmassa Kasten en Young (1989), de heldere-hemelstraling Meinel en Meinel
 (1976), het hellend vlak Liu en Jordan (1960). Alle bronnen staan bovenin
 `simulation.py`. Wat geen natuurkundige constante is, is een instelling met een
 naam: systeemgrootte uit de config flow, prestatieverhouding, C-rate,
-retourrendement, paneelhelling, oplooptijd en ruisparameters als benoemde
-velden in `PlantConfig`. Het uurprofiel van de basislast staat als vorm in
-`const.py`, met de opmerking erbij dat de vorm een didactische keuze is en de
-schaal uit het ingestelde jaarverbruik komt.
+retourrendement, paneelhelling, oplooptijd en ruisparameters als benoemde velden
+in `PlantConfig`. Het uurprofiel van de basislast staat als vorm in `const.py`,
+met de opmerking erbij dat de vorm een didactische keuze is en de schaal uit het
+ingestelde jaarverbruik komt.
 
 ---
 
@@ -234,24 +270,26 @@ retourrendement, een laadpaal met oploop, een huishouden met dagprofiel en drie
 schakelbare apparaten, en een netaansluiting die het restant is. Alles is via de
 gebruikersomgeving in te stellen, alle teksten zijn Nederlands, en er zijn twee
 kant-en-klare dashboards, een thema in de huisstijl, en een handleiding met drie
-uitgewerkte oefeningen. 99 proeven zijn groen, en 11 mutaties tonen dat die
-proeven ook echt iets bewaken. Onderweg vond de zonnestandproef een fout in de
-azimutberekening die op het scherm niet te zien zou zijn geweest.
+uitgewerkte oefeningen. 103 proeven zijn groen, ook op Linux in CI met een echte
+Home Assistant, en 11 mutaties tonen dat die proeven ook echt iets bewaken.
+Onderweg vond de zonnestandproef een fout in de azimutberekening die op het
+scherm niet te zien zou zijn geweest, en vond CI dat de rekenkern in de praktijk
+nog aan Home Assistant vastzat; beide zijn gerepareerd en beide worden nu bewaakt.
 
 ## 5. Wat niet lukte
 
-* **Niet op een echte Raspberry Pi met echte Home Assistant gedraaid.** Er staat
-  hier geen Pi en geen draaiende Home Assistant. De integratie is getoetst tegen
-  een echte Home Assistant in het geheugen (2026.9.0b3): opzetten, entiteiten,
-  bediening, services, opties, herstart. Wat dus níet is aangetoond: dat HACS de
-  repository accepteert, en dat de installatie op HAOS op een Pi 5 zonder
-  hobbels verloopt.
+* **Niet op een echte Raspberry Pi of in een echte Home Assistant-installatie
+  gedraaid.** Getoetst is de integratie tegen een echte Home Assistant in het
+  geheugen, op Windows én op Linux in CI: opzetten, entiteiten, bediening,
+  services, opties, herstart. Wat níet is aangetoond: dat HACS de repository
+  accepteert als aangepaste repository, en dat de installatie op HAOS zonder
+  hobbels verloopt. Jij hebt een eigen Home Assistant om dat op te proberen; dat
+  is de eerstvolgende ronde.
 * **De dashboards zijn niet in een browser bekeken.** Wat wel getoetst is: dat
   het geldige YAML is, dat elke entiteit die erin staat ook echt bestaat, dat
   elke serviceaanroep bestaat en elk scenario klopt. Wat niet getoetst is: hoe
-  het eruitziet, of de tegels met een `numeric-input`-feature op de HA-versie op
-  de Pi al bestaan, en of de kaart `energy-distribution` het doet. Dat is een
-  ronde waarin je een HA-instantie draait, en die is er nu niet.
+  het eruitziet, of de tegels met een `numeric-input`-feature op jouw HA-versie
+  al bestaan, en of de kaart `energy-distribution` het doet.
 * **kiosk-mode is niet geïnstalleerd of geprobeerd.** Dat is een externe
   HACS-module. De configuratie staat in het dashboard en in de README volgens de
   documentatie van die module, maar ik heb hem niet aan het werk gezien.
@@ -259,21 +297,13 @@ azimutberekening die op het scherm niet te zien zou zijn geweest.
   controleren wél dat alle tien de kWh-sensoren `device_class: energy`,
   `state_class: total_increasing` en eenheid kWh hebben, wat de eis van het
   energiedashboard is. Het doorklikken van het stappenplan zelf staat open.
-* **Geen PR.** Er is geen remote: de repository is hier aangemaakt. De tak is
-  lokaal samengevoegd met `--no-ff` en getagd. Zeg het even als je wilt dat ik
-  een GitHub-repository aanmaak en er een PR van maak; dat is een handeling naar
-  buiten, dus daar wacht ik je akkoord op.
 * **Docker Desktop wilde niet starten** toen ik een Linux-omgeving voor de
   HA-proeven zocht. Dat bleek niet nodig: `windows_shim.py` vervangt de twee
-  POSIX-modules die Home Assistant op modulehoogte importeert, en daarmee
-  draaien de HA-proeven gewoon op Windows.
+  POSIX-modules die Home Assistant op modulehoogte importeert, en CI draait de
+  proeven daarnaast op echte Linux.
 
 ## 6. Aannames
 
-* **De repository-URL in `manifest.json`** staat op
-  `https://github.com/Sven2410/virtual-ems`. Die repository bestaat nog niet.
-  Pas hem aan zodra je weet waar hij komt te staan, want HACS toont hem als
-  documentatielink.
 * **Standaard jaarverbruik 2900 kWh.** Bewust een instelling met een
   ordegrootte-default, geen kental. In de optiesdialoog en in de README staat er
   expliciet bij dat het echte jaarverbruik ingevuld hoort te worden.
@@ -283,8 +313,9 @@ azimutberekening die op het scherm niet te zien zou zijn geweest.
   ruis met tijdconstante 300 s en 15 procent spreiding. De vorm van het
   uurprofiel is een didactische keuze en staat als zodanig gedocumenteerd.
 * **Minimaal Home Assistant 2025.1.0** in `hacs.json`. De integratie gebruikt
-  `entry.runtime_data` en geeft de config entry expliciet aan de coordinator
-  mee; beide bestaan vanaf ruim voor die versie. Onder 2025.1 is niet getoetst.
+  `entry.runtime_data` en geeft de config entry expliciet aan de coordinator mee;
+  beide bestaan vanaf ruim voor die versie. Onder 2025.1 is niet getoetst, en de
+  bovenkant is getoetst op 2026.9.0b3.
 * **De menuteksten in de README** (bijvoorbeeld "Instellen als standaard op dit
   apparaat") komen uit de Nederlandse vertaling van Home Assistant en kunnen per
   versie iets anders luiden. De route klopt, de exacte woorden kunnen schuiven.
@@ -292,6 +323,9 @@ azimutberekening die op het scherm niet te zien zou zijn geweest.
   beschrijft daarom de route die wél waterdicht is: alle andere dashboards op
   "Alleen beheerder" zetten, en op het kioskscherm eenmalig het cursistdashboard
   als standaard instellen.
+* **De MIT-licentie en de openbare repository** zijn jouw keuze van vandaag, niet
+  mijn aanname. Ze staan hier alleen genoteerd omdat een openbare uitgave onder
+  MIT niet meer terug te nemen is voor wat er nu gepubliceerd is.
 
 ## 7. `git status --porcelain`
 
@@ -300,5 +334,6 @@ $ git status --porcelain
 (leeg)
 ```
 
-Alles zit in één commit op `ronde-1-virtueel-ems`, samengevoegd in `main` met
-`--no-ff` en getagd als `v1.0.0`.
+Twee commits op `ronde-1-virtueel-ems`: de integratie zelf, en de reparatie van
+de twee dingen die CI vond. Samengevoegd in `main` via PR #1 met een
+samenvoegcommit, en getagd als `v1.0.0`.

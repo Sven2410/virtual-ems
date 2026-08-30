@@ -14,13 +14,13 @@ import pytest
 
 yaml = pytest.importorskip("yaml")
 
-from custom_components.virtual_ems.catalog import entity_ids  # noqa: E402
-from custom_components.virtual_ems.const import (  # noqa: E402
+from kernlader import (  # noqa: E402
     DOMAIN,
+    SCENARIOS,
     SERVICE_RESET,
     SERVICE_SET_SCENARIO,
+    entity_ids,
 )
-from custom_components.virtual_ems.scenarios import SCENARIOS  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 DASHBOARDS = REPO / "dashboards"

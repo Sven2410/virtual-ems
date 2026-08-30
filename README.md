@@ -473,12 +473,20 @@ De proeven zijn in tweeën gedeeld.
 **Kernproeven**, zonder Home Assistant, dus overal te draaien:
 
 ```bash
-python -m pip install pytest PyYAML
+python -m pip install pytest PyYAML tzdata
 python -m pytest tests/kern
 ```
 
 Die rekenen een hele gesimuleerde dag door, controleren de energiebalans, en
 bewaken dat de dashboards, de vertalingen en het manifest bij de code passen.
+`tzdata` is alleen op Windows nodig: de proeven rekenen met Europe/Amsterdam,
+juist om zomertijd en wintertijd mee te nemen, en Windows levert zelf geen
+tijdzonedatabase.
+
+`tests/kern/kernlader.py` laadt de rekenkern zonder het Home Assistant-pakket
+eromheen. Daarmee is het niet alleen een belofte dat `simulation.py`,
+`scenarios.py`, `catalog.py` en `const.py` los te draaien zijn: zodra daar een
+Home Assistant-import binnensluipt vallen alle kernproeven meteen om.
 
 **Alle proeven**, met een echte Home Assistant in het geheugen:
 

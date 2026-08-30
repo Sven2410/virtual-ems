@@ -54,7 +54,10 @@ def main() -> int:
             print(inhoud)
         else:
             doel = doelmap / bestandsnaam
-            doel.write_text(inhoud, encoding="utf-8")
+            # Bewust een enkel regeleinde, ook op Windows: dit bestand gaat naar
+            # een Raspberry Pi en naar de ruwe configuratie-editor.
+            with doel.open("w", encoding="utf-8", newline="\n") as bestand:
+                bestand.write(inhoud)
             print(f"Geschreven: {doel}")
 
     if not argumenten.toon:

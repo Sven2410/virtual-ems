@@ -1,3 +1,6 @@
-# Volledige proefomgeving (Linux of macOS; Home Assistant draait niet op Windows).
+# Volledige proefomgeving (Linux of macOS; op Windows: zie windows_shim.py).
 pytest-homeassistant-custom-component
 PyYAML
+# Windows heeft geen tijdzonedatabase in het systeem; de kernproeven rekenen met
+# Europe/Amsterdam, juist om zomertijd en wintertijd mee te nemen.
+tzdata

@@ -7,8 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from custom_components.virtual_ems.scenarios import SCENARIOS, apply_scenario
-from custom_components.virtual_ems.simulation import PlantConfig, Simulation
+from kernlader import SCENARIOS, PlantConfig, Simulation, apply_scenario
 
 AMSTERDAM = ZoneInfo("Europe/Amsterdam")
 
