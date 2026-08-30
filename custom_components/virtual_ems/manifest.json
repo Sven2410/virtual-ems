@@ -1,14 +1,14 @@
 {
   "domain": "virtual_ems",
   "name": "Virtueel EMS",
-  "codeowners": [
-    "@Sven2410"
-  ],
-  "config_flow": true,
   "after_dependencies": [
     "frontend",
     "http"
   ],
+  "codeowners": [
+    "@Sven2410"
+  ],
+  "config_flow": true,
   "documentation": "https://github.com/Sven2410/virtual-ems",
   "integration_type": "device",
   "iot_class": "calculated",

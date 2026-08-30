@@ -62,6 +62,15 @@ def test_het_manifest_noemt_wat_de_integratie_gebruikt():
     assert "dependencies" not in manifest
 
 
+def test_de_sleutels_in_het_manifest_staan_op_volgorde():
+    """hassfest eist: domain, name, en daarna alfabetisch. Dat is geen smaak,
+    dat is een harde controle die anders pas in CI opvalt."""
+    manifest = lees_json(COMPONENT / "manifest.json")
+    sleutels = list(manifest)
+    assert sleutels[:2] == ["domain", "name"]
+    assert sleutels[2:] == sorted(sleutels[2:])
+
+
 def test_hacs_bestand_is_geldig():
     hacs = lees_json(REPO / "hacs.json")
     assert hacs["name"]
