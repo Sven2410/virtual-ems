@@ -51,6 +51,14 @@ def test_manifest_heeft_alles_wat_een_custom_integratie_nodig_heeft():
     assert manifest["documentation"].startswith("http")
 
 
+def test_het_manifest_noemt_wat_de_integratie_gebruikt():
+    """De integratie serveert zijn eigen frontend, dus hij hangt aan http en
+    frontend. Staat dat er niet, dan valt hassfest erover, en op een echte
+    installatie kan de bundel dan te vroeg aangemeld worden."""
+    manifest = lees_json(COMPONENT / "manifest.json")
+    assert set(manifest["dependencies"]) >= {"frontend", "http"}
+
+
 def test_hacs_bestand_is_geldig():
     hacs = lees_json(REPO / "hacs.json")
     assert hacs["name"]

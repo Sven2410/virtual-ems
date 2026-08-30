@@ -5,6 +5,10 @@
     "@Sven2410"
   ],
   "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http"
+  ],
   "documentation": "https://github.com/Sven2410/virtual-ems",
   "integration_type": "device",
   "iot_class": "calculated",
