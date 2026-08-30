@@ -36,50 +36,118 @@
           "batterij_kwh": "Home battery capacity",
           "laadpaal_max_kw": "Maximum charger power",
           "jaarverbruik_kwh": "Annual household consumption",
-          "dagstart_uur": "Fixed start hour of the simulated day"
+          "dagstart_uur": "Fixed start hour of the simulated day",
+          "aansluiting_a": "Connection rating per phase",
+          "fasen": "Number of phases"
         },
         "data_description": {
           "jaarverbruik_kwh": "Scales the base load. Enter the real annual consumption of the example house; the default is an order of magnitude only.",
-          "dagstart_uur": "Leave empty to follow the real clock. Enter 11 to start every lesson at 11:00, even during an evening class."
+          "dagstart_uur": "Leave empty to follow the real clock. Enter 11 to start every lesson at 11:00, even during an evening class.",
+          "aansluiting_a": "The scale the dashboard bars are drawn against. Three phases of 25 A is common in the Netherlands.",
+          "fasen": "One or three. The simulation works with the total, not per phase."
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "pv_vermogen": { "name": "PV power" },
-      "pv_opbrengst": { "name": "PV yield" },
-      "batterij_soc": { "name": "Battery SoC" },
-      "batterij_vermogen_actueel": { "name": "Battery power actual" },
-      "batterij_inhoud": { "name": "Battery content" },
-      "batterij_geladen": { "name": "Battery charged" },
-      "batterij_ontladen": { "name": "Battery discharged" },
-      "laadpaal_vermogen": { "name": "Charger power" },
-      "laadpaal_verbruik": { "name": "Charger energy" },
-      "huishoudelijk_verbruik": { "name": "Household consumption" },
-      "verbruik_totaal": { "name": "Consumption total" },
-      "net_vermogen": { "name": "Grid power" },
-      "net_afname": { "name": "Grid import" },
-      "net_teruglevering": { "name": "Grid export" },
-      "zonnehoogte": { "name": "Solar elevation" },
-      "simulatietijd": { "name": "Simulation time" },
-      "wasmachine_verbruik": { "name": "Washing machine energy" },
-      "boiler_verbruik": { "name": "Water heater energy" },
-      "airco_verbruik": { "name": "Air conditioner energy" }
+      "pv_vermogen": {
+        "name": "PV power"
+      },
+      "pv_opbrengst": {
+        "name": "PV yield"
+      },
+      "batterij_soc": {
+        "name": "Battery SoC"
+      },
+      "batterij_vermogen_actueel": {
+        "name": "Battery power actual"
+      },
+      "batterij_inhoud": {
+        "name": "Battery content"
+      },
+      "batterij_geladen": {
+        "name": "Battery charged"
+      },
+      "batterij_ontladen": {
+        "name": "Battery discharged"
+      },
+      "laadpaal_vermogen": {
+        "name": "Charger power"
+      },
+      "laadpaal_verbruik": {
+        "name": "Charger energy"
+      },
+      "huishoudelijk_verbruik": {
+        "name": "Household consumption"
+      },
+      "verbruik_totaal": {
+        "name": "Consumption total"
+      },
+      "net_vermogen": {
+        "name": "Grid power"
+      },
+      "net_afname": {
+        "name": "Grid import"
+      },
+      "net_teruglevering": {
+        "name": "Grid export"
+      },
+      "aansluiting_belasting": {
+        "name": "Grid connection load"
+      },
+      "zelfbenutting": {
+        "name": "Self consumption"
+      },
+      "zonnehoogte": {
+        "name": "Solar elevation"
+      },
+      "simulatietijd": {
+        "name": "Simulation time"
+      },
+      "wasmachine_verbruik": {
+        "name": "Washing machine energy"
+      },
+      "boiler_verbruik": {
+        "name": "Water heater energy"
+      },
+      "airco_verbruik": {
+        "name": "Air conditioner energy"
+      }
     },
     "number": {
-      "pv_bewolking": { "name": "PV cloud cover" },
-      "batterij_vermogen": { "name": "Battery power" },
-      "batterij_min_soc": { "name": "Battery min SoC" },
-      "batterij_max_soc": { "name": "Battery max SoC" },
-      "laadpaal_vermogen": { "name": "Charger power" },
-      "tijdversnelling": { "name": "Time acceleration" }
+      "pv_bewolking": {
+        "name": "PV cloud cover"
+      },
+      "batterij_vermogen": {
+        "name": "Battery power"
+      },
+      "batterij_min_soc": {
+        "name": "Battery min SoC"
+      },
+      "batterij_max_soc": {
+        "name": "Battery max SoC"
+      },
+      "laadpaal_vermogen": {
+        "name": "Charger power"
+      },
+      "tijdversnelling": {
+        "name": "Time acceleration"
+      }
     },
     "switch": {
-      "laadpaal_actief": { "name": "Charger active" },
-      "wasmachine": { "name": "Washing machine" },
-      "boiler": { "name": "Water heater" },
-      "airco": { "name": "Air conditioner" }
+      "laadpaal_actief": {
+        "name": "Charger active"
+      },
+      "wasmachine": {
+        "name": "Washing machine"
+      },
+      "boiler": {
+        "name": "Water heater"
+      },
+      "airco": {
+        "name": "Air conditioner"
+      }
     }
   },
   "selector": {
@@ -89,6 +157,12 @@
         "bewolkte_dag": "Heavily clouded day",
         "piekbelasting_avond": "Evening peak load",
         "lege_batterij": "Empty battery in the morning"
+      }
+    },
+    "fasen": {
+      "options": {
+        "1": "1 phase",
+        "3": "3 phases"
       }
     }
   },

@@ -1,7 +1,13 @@
 {
   "domain": "virtual_ems",
   "name": "Virtueel EMS",
-  "codeowners": ["@Sven2410"],
+  "after_dependencies": [
+    "frontend",
+    "http"
+  ],
+  "codeowners": [
+    "@Sven2410"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/Sven2410/virtual-ems",
   "integration_type": "device",
@@ -9,5 +15,5 @@
   "issue_tracker": "https://github.com/Sven2410/virtual-ems/issues",
   "quality_scale": "silver",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.1.0"
 }

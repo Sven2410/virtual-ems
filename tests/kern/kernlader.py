@@ -32,6 +32,8 @@ COMPONENT = REPO / "custom_components" / "virtual_ems"
 KERNBESTANDEN: tuple[str, ...] = ("const.py", "simulation.py", "scenarios.py", "catalog.py")
 
 PAKKET = "virtual_ems_kern"
+#: De naam is ook buiten dit bestand nodig, bijvoorbeeld om bundelversie.py
+#: los te laden in test_frontend.py.
 
 if PAKKET not in sys.modules:
     _pakket = types.ModuleType(PAKKET)

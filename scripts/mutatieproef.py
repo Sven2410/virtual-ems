@@ -161,9 +161,58 @@ MUTATIES: tuple[Mutatie, ...] = (
         ),
     ),
     Mutatie(
+        naam="een accent grave in een CSS-commentaar in de frontend",
+        bestand=REPO / "custom_components" / "virtual_ems" / "frontend" / "stijl.js",
+        zoek="  /* Een klasse die display zet wint van het attribuut hidden",
+        vervang="  /* Een klasse die `display` zet wint van het attribuut hidden",
+        proeven=("tests/kern/test_frontend.py::test_de_frontend_doorstaat_alle_bewakers",),
+        toelichting="node --check gaf hier ooit groen op; de bundel viel pas in de browser om.",
+    ),
+    Mutatie(
+        naam="een element dat buiten registratie.js geregistreerd wordt",
+        bestand=REPO / "custom_components" / "virtual_ems" / "frontend" / "pagina.js",
+        zoek="export class PaginaKaart extends Kaart {",
+        vervang=(
+            "customElements.define('virtual-ems-los', class extends HTMLElement {});\n\n"
+            "export class PaginaKaart extends Kaart {"
+        ),
+        proeven=(
+            "tests/kern/test_frontend.py::test_de_frontend_doorstaat_alle_bewakers",
+            "tests/kern/test_frontend.py::test_elementen_worden_op_precies_een_plek_geregistreerd",
+        ),
+        toelichting="Zonder bewaking wint dit soms de race met de eigen import van HA.",
+    ),
+    Mutatie(
+        naam="een entiteit die de frontend kent maar de integratie niet",
+        bestand=REPO / "custom_components" / "virtual_ems" / "frontend" / "entiteiten.js",
+        zoek='  "zelfbenutting",\n',
+        vervang='  "zelfbenutting",\n  "zelfvoorziening",\n',
+        proeven=(
+            "tests/kern/test_frontend.py::test_de_entiteitenlijst_is_aan_beide_kanten_gelijk",
+        ),
+    ),
+    Mutatie(
+        naam="een stroomkleur die net iets anders is",
+        bestand=REPO / "custom_components" / "virtual_ems" / "frontend" / "stijl.js",
+        zoek="--dt-solar: #dc7300;",
+        vervang="--dt-solar: #dc7400;",
+        proeven=("tests/kern/test_frontend.py::test_de_zes_stroomkleuren_staan_er_letterlijk_in",),
+        toelichting="Die kleuren zijn gezocht op OKLCH-scheiding; ongeveer bestaat niet.",
+    ),
+    Mutatie(
+        naam="een webfont in de frontend",
+        bestand=REPO / "custom_components" / "virtual_ems" / "frontend" / "stijl.js",
+        zoek="export const baseCss = `",
+        vervang=(
+            "export const baseCss = `\n"
+            '  @import url("https://fonts.googleapis.com/css2?family=Inter");'
+        ),
+        proeven=("tests/kern/test_frontend.py::test_er_wordt_geen_webfont_geladen",),
+    ),
+    Mutatie(
         naam="een ontbrekende Nederlandse naam voor een entiteit",
         bestand=COMPONENT / "translations" / "nl.json",
-        zoek='      "net_teruglevering": { "name": "Net teruglevering" },\n',
+        zoek='      "net_teruglevering": {\n        "name": "Net teruglevering"\n      },\n',
         vervang="",
         proeven=(
             "tests/kern/test_repo.py::test_elke_entiteit_heeft_een_naam_in_beide_talen",

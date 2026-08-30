@@ -490,3 +490,83 @@ def test_batterij_zonder_capaciteit_gaat_niet_stuk():
     assert snapshot.battery_power_w == 0.0
     assert snapshot.battery_soc_pct == 0.0
     assert not math.isnan(snapshot.grid_power_w)
+
+
+# --- Kentallen voor het dashboard --------------------------------------------
+
+
+def test_aansluiting_van_drie_maal_vijfentwintig_ampere_is_ruim_zeventien_kilowatt():
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=3)
+    assert sim.config.connection_power_w == pytest.approx(3 * 25 * 230)
+
+
+def test_belasting_van_de_aansluiting_telt_beide_richtingen_even_zwaar():
+    """Teruglevering belast de aansluiting net zo goed als afname."""
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=3)
+    grens = sim.config.connection_power_w
+
+    assert sim.connection_load_pct(grens / 2) == pytest.approx(50.0)
+    assert sim.connection_load_pct(-grens / 2) == pytest.approx(50.0)
+    assert sim.connection_load_pct(0.0) == 0.0
+    assert sim.connection_load_pct(grens) == pytest.approx(100.0)
+
+
+def test_belasting_wordt_niet_afgekapt_op_honderd_procent():
+    """Een overbelaste aansluiting hoort zichtbaar te zijn, niet weggepoetst."""
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=3)
+    zwaar = sim.connection_load_pct(sim.config.connection_power_w * 1.5)
+    assert zwaar == pytest.approx(150.0)
+
+
+def test_belasting_komt_ook_in_de_snapshot():
+    sim = maak_simulatie(connection_current_a=25.0, connection_phases=3)
+    snapshot = sim.step(datetime(2026, 3, 15, 12, 0, tzinfo=AMSTERDAM), 60)
+    verwacht = abs(snapshot.grid_power_w) / sim.config.connection_power_w * 100.0
+    assert snapshot.connection_load_pct == pytest.approx(verwacht)
+
+
+def test_zelfbenutting_is_onbekend_zolang_er_niets_is_opgewekt():
+    """Liever niets zeggen dan een verzonnen nul of honderd."""
+    sim = maak_simulatie()
+    assert sim.self_consumption_pct() is None
+
+    snapshot = sim.step(datetime(2026, 6, 21, 1, 0, tzinfo=AMSTERDAM), 60)
+    assert snapshot.pv_power_w == 0.0
+    assert snapshot.self_consumption_pct is None
+
+
+def test_zelfbenutting_is_honderd_procent_als_er_niets_teruggaat():
+    # Een klein dak en de boiler aan: het huis vraagt altijd meer dan de zon
+    # levert, dus er gaat geen wattuur het net op.
+    sim = maak_simulatie(pv_peak_kwp=1.0)
+    sim.setpoints.appliances["boiler"] = True
+    moment = datetime(2026, 6, 21, 13, 0, tzinfo=AMSTERDAM)
+    for _ in range(30):
+        sim.step(moment, 60)
+        moment += timedelta(minutes=1)
+
+    assert sim.totals.pv_kwh > 0
+    assert sim.totals.grid_export_kwh == 0.0
+    assert sim.self_consumption_pct() == pytest.approx(100.0)
+
+
+def test_zelfbenutting_zakt_zodra_er_teruggeleverd_wordt():
+    sim = maak_simulatie(pv_peak_kwp=10.0, annual_consumption_kwh=500.0)
+    moment = datetime(2026, 6, 21, 13, 0, tzinfo=AMSTERDAM)
+    for _ in range(30):
+        sim.step(moment, 60)
+        moment += timedelta(minutes=1)
+
+    assert sim.totals.grid_export_kwh > 0
+    aandeel = sim.self_consumption_pct()
+    verwacht = (sim.totals.pv_kwh - sim.totals.grid_export_kwh) / sim.totals.pv_kwh * 100.0
+    assert aandeel == pytest.approx(verwacht)
+    assert 0.0 < aandeel < 100.0
+
+
+def test_zelfbenutting_zakt_nooit_onder_nul():
+    """De batterij kan meer terugleveren dan er die dag is opgewekt."""
+    sim = maak_simulatie(pv_peak_kwp=1.0)
+    sim.totals.pv_kwh = 1.0
+    sim.totals.grid_export_kwh = 4.0
+    assert sim.self_consumption_pct() == 0.0

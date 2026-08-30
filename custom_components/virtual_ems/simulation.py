@@ -97,6 +97,19 @@ class PlantConfig:
         ("airco", 1200.0),
     )
 
+    # De netaansluiting. Een gangbare Nederlandse woningaansluiting is 3 fasen
+    # van 25 A; de waarden zijn een instelling, want een oudere woning heeft er
+    # vaak 1 van 35 A. Hier hangt de schaal van de balken op het dashboard aan,
+    # dus zonder deze twee zou een balk een verzonnen maximum tonen.
+    connection_current_a: float = 25.0
+    connection_phases: int = 3
+    grid_voltage_v: float = 230.0
+
+    @property
+    def connection_power_w(self) -> float:
+        """Wat de aansluiting aankan, in W: fasen maal ampère maal spanning."""
+        return self.connection_phases * self.connection_current_a * self.grid_voltage_v
+
     @property
     def battery_max_power_w(self) -> float:
         """Maximaal laad- of ontlaadvermogen in W, uit capaciteit en C-rate."""
@@ -181,6 +194,12 @@ class Snapshot:
     battery_energy_kwh: float
 
     grid_power_w: float  # positief = afname, negatief = teruglevering
+    #: Hoe vol de aansluiting zit, in procent van wat hij aankan.
+    connection_load_pct: float
+    #: Welk deel van de eigen opwek ook zelf gebruikt is, in procent. None
+    #: zolang er nog niets opgewekt is, want dan is er niets te delen en zou
+    #: elk getal verzonnen zijn.
+    self_consumption_pct: float | None
     totals: Totals
 
 
@@ -443,6 +462,33 @@ class Simulation:
         self.battery_energy_kwh = max(0.0, min(cfg.battery_capacity_kwh, self.battery_energy_kwh))
         return power
 
+    def connection_load_pct(self, grid_power_w: float) -> float:
+        """Hoe vol de aansluiting zit, in procent.
+
+        De aansluiting draagt het saldo, en die draagt het in beide richtingen
+        even zwaar: teruglevering belast hem net zo goed als afname.
+        """
+        grens = self.config.connection_power_w
+        if grens <= 0:
+            return 0.0
+        return abs(grid_power_w) / grens * 100.0
+
+    def self_consumption_pct(self) -> float | None:
+        """Welk deel van de eigen opwek ook zelf gebruikt is, in procent.
+
+        Is er nog niets opgewekt, dan valt er niets te verdelen en geeft deze
+        som None: het systeem zegt dan dat het het niet weet, in plaats van nul
+        of honderd te verzinnen.
+
+        De batterij kan meer terugleveren dan er die dag is opgewekt. Dan zou de
+        breuk onder nul zakken; hij wordt daarom op nul afgekapt.
+        """
+        opgewekt = self.totals.pv_kwh
+        if opgewekt <= 0:
+            return None
+        zelf = opgewekt - self.totals.grid_export_kwh
+        return max(0.0, min(100.0, zelf / opgewekt * 100.0))
+
     # -- de stap zelf --------------------------------------------------------
 
     def step(self, moment: datetime, elapsed_s: float) -> Snapshot:
@@ -480,6 +526,8 @@ class Simulation:
         snapshot = Snapshot(
             moment=moment,
             elapsed_s=elapsed_s,
+            connection_load_pct=self.connection_load_pct(grid_w),
+            self_consumption_pct=self.self_consumption_pct(),
             solar_elevation_deg=elevation,
             poa_irradiance=poa,
             pv_power_w=pv_w,

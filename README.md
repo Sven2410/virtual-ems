@@ -101,6 +101,10 @@ Daar staan de drie capaciteiten, plus:
   volgen. Vul bijvoorbeeld 11 in om elke les om 11:00 in de ochtend te
   beginnen. Dat is nuttig bij een avondles, want om 20:00 komt er anders geen
   zonnestraal aan te pas.
+* **Aansluiting per fase** en **aantal fasen**. Standaard 3 maal 25 A, de
+  gangbare Nederlandse woningaansluiting. Hier hangen de balken op het dashboard
+  aan: zonder deze twee zou een balk tegen een verzonnen maximum staan. Een
+  oudere woning heeft vaak 1 fase van 35 A.
 
 De integratie herlaadt zichzelf zodra je opslaat.
 
@@ -124,7 +128,60 @@ gevalideerde stroomkleuren die ook het energiedashboard gebruikt.
 
 ## De dashboards installeren
 
-In `dashboards/` staan twee complete dashboards, klaar om te plakken.
+Er zijn twee wegen. De strategie is de korte, de YAML-dashboards zijn de lange.
+
+### De korte weg: een dashboard dat zichzelf opbouwt
+
+De integratie levert zijn eigen kaarten mee, in de DomotiTech-huisstijl, en een
+strategie die er een compleet dashboard van maakt. Je hoeft niets te kopieren en
+niets te hernoemen: de strategie zoekt zelf welke installaties er draaien en
+gebruikt de juiste entiteitsnamen, hoe je de installatie ook genoemd hebt.
+
+1. **Instellingen** > **Dashboards** > **Dashboard toevoegen** >
+   **Nieuw dashboard vanaf nul**. Noem het bijvoorbeeld `Energiebeheer`.
+2. Open het, klik op het potlood, dan op de drie puntjes, en kies
+   **Ruwe configuratie-editor**.
+3. Vervang de hele inhoud door precies dit:
+
+   ```yaml
+   strategy:
+     type: custom:virtual-ems
+   ```
+
+4. Opslaan. Klaar.
+
+Voor het docent-dashboard maak je een tweede dashboard aan met:
+
+```yaml
+strategy:
+  type: custom:virtual-ems
+  weergave: docent
+```
+
+Zet daarna bij **Instellingen** > **Dashboards** de schakelaar
+**Alleen beheerder** aan voor dat tweede dashboard. De docentweergave heeft de
+scenarioknoppen, de tijdversnelling en de tweede SoC-grens erbij.
+
+Draaien er meerdere installaties op deze Pi, dan komt er per installatie een
+weergave. Wil je er maar een, zet er dan `installatie: lokaal_a` bij.
+
+De bundel wordt door de integratie zelf aangemeld, met de hash van de frontend
+in de URL. Je hoeft dus geen resource toe te voegen. Onderaan het dashboard
+staat welke versie dat scherm draait; wijkt die af van wat de server serveert,
+dan laadt het scherm zichzelf eenmalig opnieuw. Dat is er niet voor niets: een
+webview in de Home Assistant-app blijft dagen in leven zonder ooit een pagina te
+herladen.
+
+Losse kaarten zijn er ook, voor wie zelf iets wil samenstellen:
+`custom:virtual-ems-kop`, `-kpis`, `-balken`, `-bediening`, `-meter` en
+`-scenarios`. Ze staan alle zes in de kaartkiezer en willen alleen een regel
+`installatie: virtueel_ems`.
+
+### De lange weg: de YAML-dashboards
+
+In `dashboards/` staan twee complete dashboards van standaardkaarten van Home
+Assistant, klaar om te plakken. Gebruik deze als je de opbouw zelf in de hand
+wilt houden, of als de eigen kaarten om wat voor reden dan ook niet laden.
 
 Ze gaan uit van de installatienaam `Virtueel EMS`, dus van entiteiten die met
 `virtueel_ems_` beginnen. Heet jouw installatie anders, draai dan eerst:
@@ -313,6 +370,13 @@ dat verschil is de les.
 | `sensor.virtueel_ems_net_vermogen` | W | Saldo. Positief is afname, negatief is teruglevering |
 | `sensor.virtueel_ems_net_afname` | kWh | Alleen het positieve deel, cumulatief |
 | `sensor.virtueel_ems_net_teruglevering` | kWh | Alleen het negatieve deel, cumulatief |
+
+### Hoe goed doe je het
+
+| Entiteit | Eenheid | Wat het is |
+| --- | --- | --- |
+| `sensor.virtueel_ems_aansluiting_belasting` | % | Hoe vol de aansluiting zit. Teruglevering belast hem net zo goed als afname |
+| `sensor.virtueel_ems_zelfbenutting` | % | Welk deel van de eigen opwek je ook zelf gebruikt hebt. Onbekend zolang er niets opgewekt is |
 
 ### Simulatie
 
@@ -515,6 +579,25 @@ bijbehorende proef rood wordt:
 python scripts/mutatieproef.py
 python scripts/mutatieproef.py --pytest-arg=-p --pytest-arg=windows_shim   # Windows
 ```
+
+**De frontend nakijken.** `scripts/bewaak_frontend.py` vangt de fouten die een
+schermafdruk niet laat zien: een accent grave in een CSS-commentaar, een custom
+element dat buiten `registratie.js` geregistreerd wordt, `position: fixed` op een
+plek waar het niet vast aan het scherm zit, een entiteitenlijst die uit de pas
+loopt met `catalog.py`, en een webfont dat er is binnengeslopen.
+
+**De kaarten in een echte browser.** `dev/werkbank.html` draait de echte kaarten
+tegen een nagemaakte Home Assistant, zodat je ze kunt aanklikken en opmeten
+zonder dat er een Home Assistant bij hoeft te staan:
+
+```bash
+python -m http.server 8731 --bind 127.0.0.1
+```
+
+Daarna <http://127.0.0.1:8731/dev/werkbank.html>. De knoppen bovenin wisselen
+tussen de cursist- en de docentweergave. Elke klik en elke serviceaanroep wordt
+in `window.__kliks` en `window.__aanroepen` bewaard, zodat je in de console kunt
+nakijken wat er werkelijk is aangekomen.
 
 In `.github/workflows/proeven.yml` hangen alle proeven, hassfest en de
 HACS-controle aan elke duw en elk verzoek tot samenvoegen.

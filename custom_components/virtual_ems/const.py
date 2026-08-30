@@ -22,6 +22,8 @@ CONF_BATTERY_KWH: Final = "batterij_kwh"
 CONF_EV_MAX_KW: Final = "laadpaal_max_kw"
 CONF_ANNUAL_KWH: Final = "jaarverbruik_kwh"
 CONF_START_HOUR: Final = "dagstart_uur"
+CONF_CONNECTION_A: Final = "aansluiting_a"
+CONF_PHASES: Final = "fasen"
 
 DEFAULT_NAME: Final = "Virtueel EMS"
 DEFAULT_PV_PEAK_KWP: Final = 4.0
@@ -33,6 +35,13 @@ DEFAULT_EV_MAX_KW: Final = 11.0
 # jaarverbruik van de voorbeeldwoning in te vullen. Het bepaalt uitsluitend de
 # schaal van het basislastprofiel.
 DEFAULT_ANNUAL_KWH: Final = 2900.0
+
+# De netaansluiting. Drie fasen van 25 A is de gangbare Nederlandse
+# woningaansluiting; een oudere woning heeft vaak één fase van 35 A. Dit is een
+# instelling, en de balken op het dashboard hangen eraan: zonder deze twee zou
+# een balk een verzonnen maximum tonen.
+DEFAULT_CONNECTION_A: Final = 25.0
+DEFAULT_PHASES: Final = 3
 
 # --- Simulatie ---------------------------------------------------------------
 
